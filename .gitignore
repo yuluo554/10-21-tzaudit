@@ -1,0 +1,80 @@
+# ---- Python ----
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# ---- 虚拟环境 ----
+.venv/
+venv/
+ENV/
+env/
+.python-version
+
+# ---- 测试与覆盖率 ----
+.pytest_cache/
+.coverage
+.coverage.*
+coverage.xml
+htmlcov/
+.tox/
+.nox/
+.hypothesis/
+.mypy_cache/
+.ruff_cache/
+
+# ---- 打包与压缩（Release 产物本地留副本另存，不入仓）----
+*.zip
+*.tar
+*.tar.gz
+*.tgz
+
+# ---- 本项目：tzdata 下载包一律不入仓 ----
+# 只入解包后的必要文本（NEWS / leap-seconds.list）与金标 JSON；
+# 原始发布包体积大且可重新获取，provenance.json 记录 URL + sha256 即可复现
+tzdata*.tar.gz
+tzdata*.tar
+tzdata*.zip
+data/_downloads/
+
+# ---- 基准产物（只入仓 run.py 与口径说明）----
+bench/out/
+
+# ---- 本地临时的 zoneinfo 树 / 用户清单 / 生产日志，永不入库 ----
+zones/
+_private/
+samples/
+*.log
+*.csv
+# 例外：fixture 的纯文本清单用 .json 或 .md 承载，不受 *.csv 影响
+
+# ---- 编辑器 / 系统 ----
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ---- 环境变量 ----
+.env
+.env.*
