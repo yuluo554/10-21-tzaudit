@@ -1,0 +1,31 @@
+{
+  "expected": {
+    "all_history_changed": null,
+    "classes_pending": true,
+    "window_changed": null,
+    "zone_set_equal": true
+  },
+  "input": {
+    "new": {
+      "kind": "slim",
+      "pypi_version": "2026.5",
+      "sha256": "b683bd1b6659ddcd810ff02ad09ba821d4bf1065072805063eb35c49617905ac",
+      "version": "2026e",
+      "zones": 598
+    },
+    "old": {
+      "kind": "slim",
+      "pypi_version": "2026.1",
+      "sha256": "4b1d2be7ac37ceafd7327b961aa3a54e467efbdb563a23655fbfe0d39cfc42a9",
+      "version": "2026a",
+      "zones": 598
+    },
+    "window": null,
+    "window_note": "null = 全历史（Q5 定案：diff 默认全历史）"
+  },
+  "note": "M1 只固定输入与两侧树凭据；四类分类名单由 M4 的 diff 复算后回填（plan/04 §二）。此刻不得出现任何分类结论——未计算不等于空集。",
+  "pair": "2026a-2026e",
+  "pending_milestone": "M4",
+  "schema": 1,
+  "status": "skeleton"
+}

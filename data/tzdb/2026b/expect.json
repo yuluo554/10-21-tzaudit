@@ -1,0 +1,24 @@
+{
+  "expected": {
+    "parse_errors": 0,
+    "reference_cross_checked": 20,
+    "slim_zones": 598,
+    "tail_zones": 598,
+    "transitions_total": 28497,
+    "tzif_digest": "c042242f90f52b6160e808fe3aeab8527a510df59e63697a551d24c19f4e2278",
+    "tzif_versions": {
+      "2": 586,
+      "3": 12
+    },
+    "zones": 598
+  },
+  "input": {
+    "kind": "slim",
+    "pypi_version": "2026.2",
+    "sha256": "bbe9af844f658da81a5f95019480da3a89415801f6cc966806612cc7169bffe7",
+    "tree": "data/_downloads/slim/2026b",
+    "version": "2026b"
+  },
+  "schema": 1,
+  "suite": "parse"
+}

@@ -1,7 +1,8 @@
 # tzaudit · 时区数据版本漂移审计
 
 > **v0.1.0.dev0** — 本地 CLI，运行时**零网络**、**零第三方依赖**、**零遥测**。
-> 状态：骨架已可运行（`tzaudit version` / `--help`），解析与四个审计子命令随里程碑落地。
+> 状态：骨架可运行 + **数据先行已落地**（五版本真实 provenance、金标复算入口、TZif 解析器）；
+> 四个审计子命令随里程碑落地。
 
 竞品按小时采样 UTC 偏移，只能说"这个时区会错"。我们说三件它做不到的事：
 
@@ -40,9 +41,47 @@ tzaudit --help
 
 要求 Python ≥ 3.8，无运行时依赖。
 
-## 前置条件：准备两棵 zoneinfo 树
+## 前置条件：先跑 fetch（金标与审计都要真数据）
 
-工具**不下载任何东西**。你需要自己提供数据（两种形态都行）：
+工具**运行时不下载任何东西**。但仓库里的金标回归需要**真实的 IANA 版本数据**，
+而编译后的 zoneinfo 树体积大、无法文本审查，所以**不入仓**——干净 clone 后必须自己跑一次：
+
+```bash
+# 1) 拉五个版本的 IANA 源码包 + PyPI slim wheel（约 4 MB；构建期工具，允许联网）
+py -3.12 tools/fetch_tzdb.py --versions 2026a,2026b,2026c,2026d,2026e
+
+# 2) 离线复核：sha256 与 provenance 逐份比对（不联网）
+py -3.12 tools/fetch_tzdb.py --check
+
+# 3) 金标复算：全量树逐 zone 解析，parse_errors 必须为 0
+py -3.12 bench/run.py --check
+```
+
+**没跑第 1 步会怎样**：`bench/run.py --check` **退 3 并点名缺失的版本**，不会静默报"0 项通过"：
+
+```text
+缺件: 以下版本没有本地树 data/_downloads/slim/<ver>/：2026a, 2026b, 2026c, 2026d, 2026e
+处置: py -3.12 tools/fetch_tzdb.py --versions 2026a,2026b,2026c,2026d,2026e
+结论: 环境不满足（exit 3），**不是** 0 项通过
+```
+
+> **"0 项通过"与"没扫到"必须可区分**——这条是本项目所有门的共同纪律。
+
+产出落在 `data/_downloads/`（已 gitignore）：
+
+| 路径 | 内容 | 入仓？ |
+| --- | --- | --- |
+| `data/_downloads/tzdata<ver>.tar.gz` | IANA 源码发布包 | ❌ |
+| `data/_downloads/iana/<ver>/` | 解包后的 `NEWS` / `leap-seconds.list` / `version` | ❌（摘录入仓） |
+| `data/_downloads/tzdata-<pypi>.whl` | PyPI wheel（slim 构建） | ❌ |
+| `data/_downloads/slim/<ver>/` | 解 wheel 得到的 slim zoneinfo 树（金标与审计的输入） | ❌ |
+| `data/tzdb/<ver>/provenance.json` | 版本 + kind + URL + sha256 + **实测 zones** | ✅ |
+| `data/tzdb/<ver>/NEWS` | 该版本发布说明的**首版块**逐字摘录 | ✅ |
+| `data/tzdb/<ver>/expect.json` | 金标（只含输入 + 期望） | ✅ |
+
+### 自己准备两棵 zoneinfo 树（不用 fetch 也能审计）
+
+工具本身只认"一个含 TZif 文件的目录"，来源不限：
 
 ```bash
 # A) PyPI tzdata wheel（slim 构建）
@@ -52,9 +91,6 @@ py -3.12 -c "import zipfile,glob; zipfile.ZipFile(sorted(glob.glob('data/_downlo
 # B) 系统已编译树（fat 构建）
 tzaudit version --zoneinfo /usr/share/zoneinfo --json
 ```
-
-> 版本历史金标用的五份 IANA 源码包（2026a–2026e）由 `tools/fetch_tzdb.py` 拉取（M1 落地）。
-> **下载包不入仓**，仓库只保存解包后的必要文本与金标 JSON。
 
 ## 四个最小复现场景
 
@@ -144,7 +180,7 @@ src/tzaudit/       解析层（tzif / posix_tz）→ 语义层（timeline）→ 
 tests/             契约 / 架构 / 确定性 / 各模块
 bench/run.py       金标复算入口
 data/README.md     数值口径唯一权威（§四）
-data/tzdb/         五版本 provenance + 金标（M1 起）
+data/tzdb/         五版本 provenance + NEWS 摘录 + 金标（M1 起）
 data/fixtures/     合成 fixture + 生成器（M2 起）
 tools/             布局门 / 脱敏门 / 数据抓取
 plan/              计划、里程碑、交接单、发布留档
@@ -164,7 +200,7 @@ py -3.12 tools/check-desensitized.py               # 脱敏门
 | 里程碑 | 内容 | 状态 |
 |---|---|---|
 | M0 | 出题定稿 + 方法论装订 + 可运行骨架 | ✅ 已完成（2026-10-21） |
-| M1 | 数据先行：五版本 provenance + 金标复算入口 | ⬜ 下一步 |
+| M1 | 数据先行：五版本 provenance + 金标复算入口 | ✅ 已完成（2026-10-21） |
 | M2 | TZif 双引擎（表 + POSIX tail） | ⬜ |
 | M3 | 墙钟窗口 `windows`（含 `--all`） | ⬜ |
 | M4 | 版本差异分类 `diff` | ⬜ |

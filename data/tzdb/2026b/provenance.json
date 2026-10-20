@@ -1,0 +1,12 @@
+{
+  "kind": "slim",
+  "notes": "slim wheel from PyPI tzdata 2026.2",
+  "pypi_version": "2026.2",
+  "retrieved": "2026-10-21",
+  "sha256": "bbe9af844f658da81a5f95019480da3a89415801f6cc966806612cc7169bffe7",
+  "source_sha256": "114543d9f19a6bfeb5bca43686aea173d38755a3db1f2eec112647ae92c6f544",
+  "source_url": "https://files.pythonhosted.org/packages/ce/e4/dccd7f47c4b64213ac01ef921a1337ee6e30e8c6466046018326977efd95/tzdata-2026.2-py2.py3-none-any.whl",
+  "source_url_iana": "https://data.iana.org/time-zones/releases/tzdata2026b.tar.gz",
+  "version": "2026b",
+  "zones": 598
+}
