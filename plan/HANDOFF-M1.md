@@ -53,6 +53,11 @@
 
 ## 3. 下一棒待办（M1 数据先行）
 
+> **2026-10-21 用户已拍板四条**（写入 `plan/00` 决策记录 ⑦ 与 `plan/06` §四）：
+> **Q1 = 两棵树全用 PyPI wheel（slim 对 slim）**；**Q2 = Python 底线 3.8**；
+> **Q4 = `audit --version` 取两个目录路径**；**Q7 = 远端 M6 再建**。
+> 下列步骤已按这四条收敛，**不要再改成 fat/版本号/早建远端**。
+
 按顺序做，每步都有可跑的判据：
 
 1. **实现 `tools/fetch_tzdb.py`**（当前退 5）
@@ -62,20 +67,22 @@
      （字段见 `plan/04` §1.2）。
    - `--check`：不联网，只校验已下载件 sha256 与 provenance 一致。
    - **失败即退 3**（环境不满足），不吞异常、不"跳过版本"。
-2. **入仓五份 `provenance.json` + `NEWS` 摘录**
-   - `zones` 字段填**实测值**（用 `ZoneinfoStore(slim 树).zones()` 数），不是题面 598。
+2. **准备金标用的两棵 slim 树**（Q1：**不编译 fat**）
+   - `pip download tzdata==<ver>` → 解 wheel 的 `tzdata/zoneinfo/**` 到 `data/_downloads/<ver>/`。
+   - 版本对取"真实存在的两个 PyPI 版本"（如 2026.1 vs 2026.5），**在 `provenance.json` 里写 `kind: "slim"`**。
+3. **入仓五份 `provenance.json` + `NEWS` 摘录**
+   - `zones` 字段填**实测值**（`ZoneinfoStore(...).zones()` 数），不是题面 598。
    - 2026e 的 NEWS 里爱尔兰那句、2026d 的伊朗那句要**逐字保留**（`plan/01` §1.4 引用它们）。
-3. **`bench/run.py --regen` 骨架 → 真复算**
+4. **`bench/run.py --regen` 骨架 → 真复算**
    - 读树 → `ZoneinfoStore.zones()` → 逐 zone `tzif.parse`（M2 前可用"只数 zone 数"的降级形态，
      但**必须把"解析尚未实现"显式写进输出**，不许假装跑过）。
    - 生成 `data/tzdb/<ver>/expect.json`（只含输入 + 期望）。
-4. **跑通三条命令并留输出**
+5. **跑通三条命令并留输出**
    - `py -3.12 tools/fetch_tzdb.py --check`
    - `py -3.12 bench/run.py --check`（分母 > 0，退出 0）
    - 干净 clone（无 `data/_downloads`）跑 `--check` → **必须退 3 并点名缺失版本**
-5. **README 补"前置条件"一节**（`plan/04` §1.1 已写要求），并验证"干净 clone 按 README 能跑通 fetch"。
-6. **状态回写 + 写 `plan/HANDOFF-M2.md` + commit**（收尾顺序见下）。
-7. 若 Q1/Q2/Q4 决策已由用户拍板，按答复调整 `plan/03` §一 / `plan/04` §一 的实现口径。
+6. **README 补"前置条件"一节**（`plan/04` §1.1 已写要求），并验证"干净 clone 按 README 能跑通 fetch"。
+7. **状态回写 + 写 `plan/HANDOFF-M2.md` + commit**（收尾顺序见下）。
 
 ## 4. 既定口径清单（K 编号；动了会打挂测试）
 
@@ -94,6 +101,10 @@
 | K11 | 四类变更判定顺序固定 `history → future → abbr → alias` | `diff.CLASS_ORDER`（已是常量） |
 | K12 | 发布里程碑固定 M6（`check-sprint-layout.py::RELEASE_MILESTONE`） | `LAYOUT.RELEASE` 分支 |
 | K13 | M0 豁免 HANDOFF-M0；`HANDOFF_SECTIONS` 七节为**必需子集**（超集合法） | `LAYOUT.HANDOFFS` / `LAYOUT.NEXT_HANDOFF` |
+| K14 | **主金标两棵树 = PyPI slim wheel × 2**（Q1 定案）；fat 仅作 M2 fixture | M1 金标口径；`data/tzdb/*/provenance.json` 的 `kind` 必须是 `slim` |
+| K15 | **Python 底线 3.8**（Q2 定案）：禁 `dict \|`、禁 `X \| Y` 类型标注、禁 `tomllib`、禁 `str.removeprefix` | `py -3.8 -m pytest` 必须全绿；CI 矩阵 3.8+3.12 |
+| K16 | **`audit --version` 只收两个目录路径**（Q4 定案），不收版本号 | `cli.py` 的 `--version` 帮助文本；`plan/03` §七 |
+| K17 | **未接远端**（Q7 定案）：DoD 只写"本地等价校验（未接远端，CI 待首推验证）" | `plan/05` §三 U1/U2；M6 补记 |
 
 ## 5. 本机环境坑（只写实测过的；带日期）
 
