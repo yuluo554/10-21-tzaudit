@@ -11,8 +11,9 @@ import argparse
 import json
 import sys
 
-from . import __version__
+from . import __version__, civil
 from .errors import (
+    EXIT_ENV,
     EXIT_OK,
     EXIT_USAGE,
     NotImplementedYet,
@@ -116,10 +117,80 @@ def _run_version(args):
     return EXIT_OK
 
 
+def _render_windows(result, as_json):
+    """把扫描结果渲染成 JSON 或 Markdown（**stdout 只含结果**）。"""
+    if as_json:
+        doc = {
+            "year": result.year,
+            "zones": result.zone,
+            "windows": [item.as_dict() for item in result.windows],
+            "summary": {
+                "zones_scanned": result.zones_scanned,
+                "windows": len(result.windows),
+                "errors": list(result.errors),
+            },
+        }
+        emit(dumps_json(doc))
+        return
+
+    lines = []
+    for item in result.windows:
+        lines.append(
+            "%-8s %s → %s  (%dmin%s)  %s → %s  %s  source=%s"
+            % (item.type,
+               civil.format_local(item.start_local),
+               civil.format_local(item.end_local),
+               item.duration_min,
+               ("+%ds" % item.residual_sec) if item.residual_sec else "",
+               civil.format_offset(item.offset_before),
+               civil.format_offset(item.offset_after),
+               item.zone,
+               item.source)
+        )
+    if not lines:
+        lines.append("（%d 年无墙钟风险窗口）" % result.year)
+    if result.errors:
+        lines.append("")
+        lines.append("错误 %d 处：" % len(result.errors))
+        for message in result.errors:
+            lines.append("  %s" % message)
+    emit("\n".join(lines))
+
+
+def _run_windows(args):
+    """``windows`` 子命令：墙钟风险窗口（``plan/03`` §五）。
+
+    ``--zone`` 与 ``--all`` 互斥（缺一即用法错误）。
+    """
+    from .windows import scan_all, scan_tree
+    from .zoneinfo_store import ZoneinfoStore
+
+    if bool(args.zone) == bool(args.all):
+        raise UsageError("windows 必须且只能给出 --zone 或 --all 之一")
+
+    store = ZoneinfoStore(args.zoneinfo)
+    if args.all:
+        result = scan_all(store, args.year)
+    else:
+        result = scan_tree(store, args.zone, args.year)
+
+    _render_windows(result, args.json)
+    if result.errors:
+        # 环境不满足（这台机器上有 zone 读不了）——不中断整批，但退出码必须反映出来
+        sys.stderr.write("%s: %d 个 zone 扫描失败\n" % (PROG, len(result.errors)))
+        return EXIT_ENV
+    return EXIT_OK
+
+
 def _unimplemented(command):
+    """尚未落地的子命令（M3 后只剩 ``diff`` / ``audit`` / ``report``）。
+
+    退出码 5（功能未就绪）是**临时**语义：每个子命令落地时在同一提交里退役它
+    （`errors` 常量 → 本函数 → `tests/test_exit_codes.py` → 文档，四处同步）。
+    """
     raise NotImplementedYet(
-        "子命令 %s 的解析层尚未实现（见 plan/03）；当前为 M0 骨架，"
-        "version 子命令可用" % command
+        "子命令 %s 的解析层尚未实现（见 plan/03）；当前可用：version、windows"
+        % command
     )
 
 
@@ -140,6 +211,8 @@ def main(argv=None):
             return EXIT_USAGE
         if args.command == "version":
             return _run_version(args)
+        if args.command == "windows":
+            return _run_windows(args)
         return _unimplemented(args.command)
     except TzAuditError as exc:
         sys.stderr.write("%s: %s\n" % (PROG, exc.message))

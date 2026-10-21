@@ -41,14 +41,29 @@ def test_not_ready_exit_code_is_5():
     """骨架期：未实现的子命令退 5（不是 0、不是 2）。
 
     退役条件：该子命令实现落地时，本测试随 ``_unimplemented`` 一起删除。
+
+    **M3 已退役 ``windows``**（2026-10-21）：``windows`` 子命令落地，退出码 5 的
+    适用范围收窄到 ``diff`` / ``audit`` / ``report`` 三条。
     """
     for argv in (
-        ["windows", "--zone", "America/New_York", "--year", "2026", "--zoneinfo", "x"],
         ["diff", "--old", "a", "--new", "b"],
         ["audit", "--times", "t.txt", "--zone", "UTC"],
         ["report", "--from", "x.json"],
     ):
         assert cli.main(argv) == errors.EXIT_NOT_READY, argv
+
+
+def test_windows_is_no_longer_not_ready(tmp_path):
+    """**防复活**断言：``windows`` 落地后不得再退 5（退 3 = 环境不满足，才是它现在的语义）。
+
+    这条是"幽灵语义复活"的闸：把 ``cli.main`` 的 ``windows`` 分派删掉、
+    或把它改回 ``_unimplemented``，这里立刻红。
+    """
+    tree = tmp_path / "tree"
+    tree.mkdir()
+    rc = cli.main(["windows", "--zone", "America/New_York", "--year", "2026",
+                   "--zoneinfo", str(tree)])
+    assert rc != errors.EXIT_NOT_READY, "windows 落地后不得再退 5（功能未就绪）"
 
 
 def test_environment_problem_maps_to_3(tmp_path):

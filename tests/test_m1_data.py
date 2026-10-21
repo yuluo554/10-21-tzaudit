@@ -375,7 +375,12 @@ def test_bench_reports_missing_versions_instead_of_passing(tmp_path):
 
 
 def test_bench_rejects_unknown_suite():
-    rc, out = _run_bench(["--check", "--suite", "windows"])
+    """未知套件名必须退 2（显式拒绝，不回落）。
+
+    **M3 补记**：``windows`` 曾是"未知套件"的样板（2026-10-21 起它是第三套件），
+    所以这里换成真正不存在的名字。
+    """
+    rc, out = _run_bench(["--check", "--suite", "no-such-suite"])
     assert rc == 2, out
 
 

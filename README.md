@@ -1,8 +1,9 @@
 # tzaudit · 时区数据版本漂移审计
 
 > **v0.1.0.dev0** — 本地 CLI，运行时**零网络**、**零第三方依赖**、**零遥测**。
-> 状态：骨架可运行 + **数据先行已落地** + **双引擎已落地**（五版本真实 provenance、金标复算入口、
-> TZif 解析器、POSIX tail 解析器、表+tail 合并与本地反解）；四个审计子命令随里程碑落地。
+> 状态：骨架可运行 + **数据先行已落地** + **双引擎已落地** + **墙钟窗口已落地**（五版本真实 provenance、
+> 金标复算入口、TZif 解析器、POSIX tail 解析器、表+tail 合并与本地反解、`windows` 子命令）。
+> `diff` / `audit` / `report` 三个子命令随里程碑落地。
 
 竞品按小时采样 UTC 偏移，只能说"这个时区会错"。我们说三件它做不到的事：
 
@@ -94,23 +95,26 @@ tzaudit version --zoneinfo /usr/share/zoneinfo --json
 
 ## 四个最小复现场景
 
-> 命令在本仓库**当前骨架**下会因解析层未落地而退 5（功能未就绪）。以下为定稿接口，
-> 每条在对应里程碑完成时由 `tests/` 锁定（见 `plan/05` 的 DoD）。
+> `diff` / `audit` / `report` 三个子命令在**当前骨架**下会因解析层未落地而退 5（功能未就绪）。
+> `windows` **已可用**。以下为定稿接口，每条在对应里程碑完成时由 `tests/` 锁定（见 `plan/05` 的 DoD）。
 
-### 1. 墙钟窗口（GAP / OVERLAP）
+### 1. 墙钟窗口（GAP / OVERLAP）✅ 已可用
 
 ```bash
 tzaudit windows --zone America/New_York --year 2026 --zoneinfo <tree>
 ```
 
 ```text
-GAP      2026-03-08 02:00 → 03:00  (60min)  -05:00 → -04:00  America/New_York   source=table
-OVERLAP  2026-11-01 01:00 → 02:00  (60min)  -04:00 → -05:00  America/New_York   source=table
+GAP      2026-03-08 02:00 → 03:00  (60min)  -05:00 → -04:00  America/New_York  source=tail
+OVERLAP  2026-11-01 01:00 → 02:00  (60min)  -04:00 → -05:00  America/New_York  source=tail
 ```
 
 ```bash
 tzaudit windows --all --year 2026 --zoneinfo <tree> --json
 ```
+
+`--json` 输出 `{"year", "zones", "windows", "summary"}`；`summary.zones_scanned` 是实际扫描的
+zone 数，`summary.errors` 是单 zone 失败清单（有错退 3，不中断整批）。
 
 ### 2. 版本差异（四类互斥）
 
@@ -202,7 +206,7 @@ py -3.12 tools/check-desensitized.py               # 脱敏门
 | M0 | 出题定稿 + 方法论装订 + 可运行骨架 | ✅ 已完成（2026-10-21） |
 | M1 | 数据先行：五版本 provenance + 金标复算入口 | ✅ 已完成（2026-10-21） |
 | M2 | TZif 双引擎（表 + POSIX tail） | ✅ 已完成（2026-10-21） |
-| M3 | 墙钟窗口 `windows`（含 `--all`） | ⬜ |
+| M3 | 墙钟窗口 `windows`（含 `--all`） | ✅ 已完成（2026-10-21） |
 | M4 | 版本差异分类 `diff` | ⬜ |
 | M5 | 清单审计 `audit` + 报告门禁 | ⬜ |
 | M6 | 发布：tag + Release + 发布留档 | ⬜ |

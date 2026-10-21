@@ -361,3 +361,13 @@ def describe(timeline):
         "tail_segments": sum(1 for s in timeline.segments if s.source == "tail"),
         "tail": tail.raw if tail is not None else None,
     }
+
+
+def segment_source_at(utc, timeline):
+    """``utc`` 落在哪个引擎的段里 → ``"table"`` / ``"tail"``。
+
+    M3 的 ``windows`` 要给每条窗口标 ``source``（``plan/02`` §2.1："source 是一等字段"），
+    而"表尾那个转换点本身归 tail"这条规则只在 ``load_timeline`` 里成立——
+    调用方自己判断会重复实现一遍、容易写反。
+    """
+    return _segment_at(utc, timeline.segments).source

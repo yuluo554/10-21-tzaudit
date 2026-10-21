@@ -1,0 +1,1051 @@
+{
+  "expected": {
+    "reference_cross_checked": 40,
+    "sampled": [
+      {
+        "years": [
+          {
+            "windows": [
+              {
+                "duration_min": 60,
+                "end_local": "2024-04-26 01:00:00",
+                "offset_after": "+03:00",
+                "offset_before": "+02:00",
+                "residual_sec": 0,
+                "source": "tail",
+                "start_local": "2024-04-26 00:00:00",
+                "type": "GAP"
+              },
+              {
+                "duration_min": 60,
+                "end_local": "2024-11-01 00:00:00",
+                "offset_after": "+02:00",
+                "offset_before": "+03:00",
+                "residual_sec": 0,
+                "source": "tail",
+                "start_local": "2024-10-31 23:00:00",
+                "type": "OVERLAP"
+              }
+            ],
+            "year": 2024
+          },
+          {
+            "windows": [
+              {
+                "duration_min": 60,
+                "end_local": "2026-04-24 01:00:00",
+                "offset_after": "+03:00",
+                "offset_before": "+02:00",
+                "residual_sec": 0,
+                "source": "tail",
+                "start_local": "2026-04-24 00:00:00",
+                "type": "GAP"
+              },
+              {
+                "duration_min": 60,
+                "end_local": "2026-10-30 00:00:00",
+                "offset_after": "+02:00",
+                "offset_before": "+03:00",
+                "residual_sec": 0,
+                "source": "tail",
+                "start_local": "2026-10-29 23:00:00",
+                "type": "OVERLAP"
+              }
+            ],
+            "year": 2026
+          }
+        ],
+        "zone": "Africa/Cairo"
+      },
+      {
+        "years": [
+          {
+            "windows": [
+              {
+                "duration_min": 60,
+                "end_local": "2024-03-10 03:00:00",
+                "offset_after": "+00:00",
+                "offset_before": "+01:00",
+                "residual_sec": 0,
+                "source": "table",
+                "start_local": "2024-03-10 02:00:00",
+                "type": "OVERLAP"
+              },
+              {
+                "duration_min": 60,
+                "end_local": "2024-04-14 03:00:00",
+                "offset_after": "+01:00",
+                "offset_before": "+00:00",
+                "residual_sec": 0,
+                "source": "table",
+                "start_local": "2024-04-14 02:00:00",
+                "type": "GAP"
+              }
+            ],
+            "year": 2024
+          },
+          {
+            "windows": [
+              {
+                "duration_min": 60,
+                "end_local": "2026-02-15 03:00:00",
+                "offset_after": "+00:00",
+                "offset_before": "+01:00",
+                "residual_sec": 0,
+                "source": "table",
+                "start_local": "2026-02-15 02:00:00",
+                "type": "OVERLAP"
+              },
+              {
+                "duration_min": 60,
+                "end_local": "2026-03-22 03:00:00",
+                "offset_after": "+01:00",
+                "offset_before": "+00:00",
+                "residual_sec": 0,
+                "source": "table",
+                "start_local": "2026-03-22 02:00:00",
+                "type": "GAP"
+              }
+            ],
+            "year": 2026
+          }
+        ],
+        "zone": "Africa/Casablanca"
+      },
+      {
+        "years": [
+          {
+            "windows": [
+              {
+                "duration_min": 60,
+                "end_local": "2024-03-31 03:00:00",
+                "offset_after": "+02:00",
+                "offset_before": "+01:00",
+                "residual_sec": 0,
+                "source": "tail",
+                "start_local": "2024-03-31 02:00:00",
+                "type": "GAP"
+              },
+              {
+                "duration_min": 60,
+                "end_local": "2024-10-27 03:00:00",
+                "offset_after": "+01:00",
+                "offset_before": "+02:00",
+                "residual_sec": 0,
+                "source": "tail",
+                "start_local": "2024-10-27 02:00:00",
+                "type": "OVERLAP"
+              }
+            ],
+            "year": 2024
+          },
+          {
+            "windows": [
+              {
+                "duration_min": 60,
+                "end_local": "2026-03-29 03:00:00",
+                "offset_after": "+02:00",
+                "offset_before": "+01:00",
+                "residual_sec": 0,
+                "source": "tail",
+                "start_local": "2026-03-29 02:00:00",
+                "type": "GAP"
+              },
+              {
+                "duration_min": 60,
+                "end_local": "2026-10-25 03:00:00",
+                "offset_after": "+01:00",
+                "offset_before": "+02:00",
+                "residual_sec": 0,
+                "source": "tail",
+                "start_local": "2026-10-25 02:00:00",
+                "type": "OVERLAP"
+              }
+            ],
+            "year": 2026
+          }
+        ],
+        "zone": "Africa/Ceuta"
+      },
+      {
+        "years": [
+          {
+            "windows": [
+              {
+                "duration_min": 60,
+                "end_local": "2024-03-10 03:00:00",
+                "offset_after": "+00:00",
+                "offset_before": "+01:00",
+                "residual_sec": 0,
+                "source": "table",
+                "start_local": "2024-03-10 02:00:00",
+                "type": "OVERLAP"
+              },
+              {
+                "duration_min": 60,
+                "end_local": "2024-04-14 03:00:00",
+                "offset_after": "+01:00",
+                "offset_before": "+00:00",
+                "residual_sec": 0,
+                "source": "table",
+                "start_local": "2024-04-14 02:00:00",
+                "type": "GAP"
+              }
+            ],
+            "year": 2024
+          },
+          {
+            "windows": [
+              {
+                "duration_min": 60,
+                "end_local": "2026-02-15 03:00:00",
+                "offset_after": "+00:00",
+                "offset_before": "+01:00",
+                "residual_sec": 0,
+                "source": "table",
+                "start_local": "2026-02-15 02:00:00",
+                "type": "OVERLAP"
+              },
+              {
+                "duration_min": 60,
+                "end_local": "2026-03-22 03:00:00",
+                "offset_after": "+01:00",
+                "offset_before": "+00:00",
+                "residual_sec": 0,
+                "source": "table",
+                "start_local": "2026-03-22 02:00:00",
+                "type": "GAP"
+              }
+            ],
+            "year": 2026
+          }
+        ],
+        "zone": "Africa/El_Aaiun"
+      },
+      {
+        "years": [
+          {
+            "windows": [
+              {
+                "duration_min": 60,
+                "end_local": "2024-03-10 03:00:00",
+                "offset_after": "-09:00",
+                "offset_before": "-10:00",
+                "residual_sec": 0,
+                "source": "tail",
+                "start_local": "2024-03-10 02:00:00",
+                "type": "GAP"
+              },
+              {
+                "duration_min": 60,
+                "end_local": "2024-11-03 02:00:00",
+                "offset_after": "-10:00",
+                "offset_before": "-09:00",
+                "residual_sec": 0,
+                "source": "tail",
+                "start_local": "2024-11-03 01:00:00",
+                "type": "OVERLAP"
+              }
+            ],
+            "year": 2024
+          },
+          {
+            "windows": [
+              {
+                "duration_min": 60,
+                "end_local": "2026-03-08 03:00:00",
+                "offset_after": "-09:00",
+                "offset_before": "-10:00",
+                "residual_sec": 0,
+                "source": "tail",
+                "start_local": "2026-03-08 02:00:00",
+                "type": "GAP"
+              },
+              {
+                "duration_min": 60,
+                "end_local": "2026-11-01 02:00:00",
+                "offset_after": "-10:00",
+                "offset_before": "-09:00",
+                "residual_sec": 0,
+                "source": "tail",
+                "start_local": "2026-11-01 01:00:00",
+                "type": "OVERLAP"
+              }
+            ],
+            "year": 2026
+          }
+        ],
+        "zone": "America/Adak"
+      },
+      {
+        "years": [
+          {
+            "windows": [
+              {
+                "duration_min": 60,
+                "end_local": "2024-03-10 03:00:00",
+                "offset_after": "-08:00",
+                "offset_before": "-09:00",
+                "residual_sec": 0,
+                "source": "tail",
+                "start_local": "2024-03-10 02:00:00",
+                "type": "GAP"
+              },
+              {
+                "duration_min": 60,
+                "end_local": "2024-11-03 02:00:00",
+                "offset_after": "-09:00",
+                "offset_before": "-08:00",
+                "residual_sec": 0,
+                "source": "tail",
+                "start_local": "2024-11-03 01:00:00",
+                "type": "OVERLAP"
+              }
+            ],
+            "year": 2024
+          },
+          {
+            "windows": [
+              {
+                "duration_min": 60,
+                "end_local": "2026-03-08 03:00:00",
+                "offset_after": "-08:00",
+                "offset_before": "-09:00",
+                "residual_sec": 0,
+                "source": "tail",
+                "start_local": "2026-03-08 02:00:00",
+                "type": "GAP"
+              },
+              {
+                "duration_min": 60,
+                "end_local": "2026-11-01 02:00:00",
+                "offset_after": "-09:00",
+                "offset_before": "-08:00",
+                "residual_sec": 0,
+                "source": "tail",
+                "start_local": "2026-11-01 01:00:00",
+                "type": "OVERLAP"
+              }
+            ],
+            "year": 2026
+          }
+        ],
+        "zone": "America/Anchorage"
+      },
+      {
+        "years": [
+          {
+            "windows": [
+              {
+                "duration_min": 60,
+                "end_local": "2024-03-24 00:00:00",
+                "offset_after": "-04:00",
+                "offset_before": "-03:00",
+                "residual_sec": 0,
+                "source": "table",
+                "start_local": "2024-03-23 23:00:00",
+                "type": "OVERLAP"
+              },
+              {
+                "duration_min": 60,
+                "end_local": "2024-10-06 01:00:00",
+                "offset_after": "-03:00",
+                "offset_before": "-04:00",
+                "residual_sec": 0,
+                "source": "table",
+                "start_local": "2024-10-06 00:00:00",
+                "type": "GAP"
+              }
+            ],
+            "year": 2024
+          },
+          {
+            "windows": [],
+            "year": 2026
+          }
+        ],
+        "zone": "America/Asuncion"
+      },
+      {
+        "years": [
+          {
+            "windows": [
+              {
+                "duration_min": 60,
+                "end_local": "2024-03-10 03:00:00",
+                "offset_after": "-09:00",
+                "offset_before": "-10:00",
+                "residual_sec": 0,
+                "source": "tail",
+                "start_local": "2024-03-10 02:00:00",
+                "type": "GAP"
+              },
+              {
+                "duration_min": 60,
+                "end_local": "2024-11-03 02:00:00",
+                "offset_after": "-10:00",
+                "offset_before": "-09:00",
+                "residual_sec": 0,
+                "source": "tail",
+                "start_local": "2024-11-03 01:00:00",
+                "type": "OVERLAP"
+              }
+            ],
+            "year": 2024
+          },
+          {
+            "windows": [
+              {
+                "duration_min": 60,
+                "end_local": "2026-03-08 03:00:00",
+                "offset_after": "-09:00",
+                "offset_before": "-10:00",
+                "residual_sec": 0,
+                "source": "tail",
+                "start_local": "2026-03-08 02:00:00",
+                "type": "GAP"
+              },
+              {
+                "duration_min": 60,
+                "end_local": "2026-11-01 02:00:00",
+                "offset_after": "-10:00",
+                "offset_before": "-09:00",
+                "residual_sec": 0,
+                "source": "tail",
+                "start_local": "2026-11-01 01:00:00",
+                "type": "OVERLAP"
+              }
+            ],
+            "year": 2026
+          }
+        ],
+        "zone": "America/Atka"
+      },
+      {
+        "years": [
+          {
+            "windows": [
+              {
+                "duration_min": 60,
+                "end_local": "2024-03-10 03:00:00",
+                "offset_after": "-06:00",
+                "offset_before": "-07:00",
+                "residual_sec": 0,
+                "source": "tail",
+                "start_local": "2024-03-10 02:00:00",
+                "type": "GAP"
+              },
+              {
+                "duration_min": 60,
+                "end_local": "2024-11-03 02:00:00",
+                "offset_after": "-07:00",
+                "offset_before": "-06:00",
+                "residual_sec": 0,
+                "source": "tail",
+                "start_local": "2024-11-03 01:00:00",
+                "type": "OVERLAP"
+              }
+            ],
+            "year": 2024
+          },
+          {
+            "windows": [
+              {
+                "duration_min": 60,
+                "end_local": "2026-03-08 03:00:00",
+                "offset_after": "-06:00",
+                "offset_before": "-07:00",
+                "residual_sec": 0,
+                "source": "tail",
+                "start_local": "2026-03-08 02:00:00",
+                "type": "GAP"
+              },
+              {
+                "duration_min": 60,
+                "end_local": "2026-11-01 02:00:00",
+                "offset_after": "-07:00",
+                "offset_before": "-06:00",
+                "residual_sec": 0,
+                "source": "tail",
+                "start_local": "2026-11-01 01:00:00",
+                "type": "OVERLAP"
+              }
+            ],
+            "year": 2026
+          }
+        ],
+        "zone": "America/Boise"
+      },
+      {
+        "years": [
+          {
+            "windows": [
+              {
+                "duration_min": 60,
+                "end_local": "2024-03-10 03:00:00",
+                "offset_after": "-06:00",
+                "offset_before": "-07:00",
+                "residual_sec": 0,
+                "source": "tail",
+                "start_local": "2024-03-10 02:00:00",
+                "type": "GAP"
+              },
+              {
+                "duration_min": 60,
+                "end_local": "2024-11-03 02:00:00",
+                "offset_after": "-07:00",
+                "offset_before": "-06:00",
+                "residual_sec": 0,
+                "source": "tail",
+                "start_local": "2024-11-03 01:00:00",
+                "type": "OVERLAP"
+              }
+            ],
+            "year": 2024
+          },
+          {
+            "windows": [
+              {
+                "duration_min": 60,
+                "end_local": "2026-03-08 03:00:00",
+                "offset_after": "-06:00",
+                "offset_before": "-07:00",
+                "residual_sec": 0,
+                "source": "tail",
+                "start_local": "2026-03-08 02:00:00",
+                "type": "GAP"
+              },
+              {
+                "duration_min": 60,
+                "end_local": "2026-11-01 02:00:00",
+                "offset_after": "-07:00",
+                "offset_before": "-06:00",
+                "residual_sec": 0,
+                "source": "tail",
+                "start_local": "2026-11-01 01:00:00",
+                "type": "OVERLAP"
+              }
+            ],
+            "year": 2026
+          }
+        ],
+        "zone": "America/Cambridge_Bay"
+      },
+      {
+        "years": [
+          {
+            "windows": [
+              {
+                "duration_min": 60,
+                "end_local": "2024-03-10 03:00:00",
+                "offset_after": "-05:00",
+                "offset_before": "-06:00",
+                "residual_sec": 0,
+                "source": "tail",
+                "start_local": "2024-03-10 02:00:00",
+                "type": "GAP"
+              },
+              {
+                "duration_min": 60,
+                "end_local": "2024-11-03 02:00:00",
+                "offset_after": "-06:00",
+                "offset_before": "-05:00",
+                "residual_sec": 0,
+                "source": "tail",
+                "start_local": "2024-11-03 01:00:00",
+                "type": "OVERLAP"
+              }
+            ],
+            "year": 2024
+          },
+          {
+            "windows": [
+              {
+                "duration_min": 60,
+                "end_local": "2026-03-08 03:00:00",
+                "offset_after": "-05:00",
+                "offset_before": "-06:00",
+                "residual_sec": 0,
+                "source": "tail",
+                "start_local": "2026-03-08 02:00:00",
+                "type": "GAP"
+              },
+              {
+                "duration_min": 60,
+                "end_local": "2026-11-01 02:00:00",
+                "offset_after": "-06:00",
+                "offset_before": "-05:00",
+                "residual_sec": 0,
+                "source": "tail",
+                "start_local": "2026-11-01 01:00:00",
+                "type": "OVERLAP"
+              }
+            ],
+            "year": 2026
+          }
+        ],
+        "zone": "America/Chicago"
+      },
+      {
+        "years": [
+          {
+            "windows": [
+              {
+                "duration_min": 60,
+                "end_local": "2024-03-10 03:00:00",
+                "offset_after": "-06:00",
+                "offset_before": "-07:00",
+                "residual_sec": 0,
+                "source": "tail",
+                "start_local": "2024-03-10 02:00:00",
+                "type": "GAP"
+              },
+              {
+                "duration_min": 60,
+                "end_local": "2024-11-03 02:00:00",
+                "offset_after": "-07:00",
+                "offset_before": "-06:00",
+                "residual_sec": 0,
+                "source": "tail",
+                "start_local": "2024-11-03 01:00:00",
+                "type": "OVERLAP"
+              }
+            ],
+            "year": 2024
+          },
+          {
+            "windows": [
+              {
+                "duration_min": 60,
+                "end_local": "2026-03-08 03:00:00",
+                "offset_after": "-06:00",
+                "offset_before": "-07:00",
+                "residual_sec": 0,
+                "source": "tail",
+                "start_local": "2026-03-08 02:00:00",
+                "type": "GAP"
+              },
+              {
+                "duration_min": 60,
+                "end_local": "2026-11-01 02:00:00",
+                "offset_after": "-07:00",
+                "offset_before": "-06:00",
+                "residual_sec": 0,
+                "source": "tail",
+                "start_local": "2026-11-01 01:00:00",
+                "type": "OVERLAP"
+              }
+            ],
+            "year": 2026
+          }
+        ],
+        "zone": "America/Ciudad_Juarez"
+      },
+      {
+        "years": [
+          {
+            "windows": [
+              {
+                "duration_min": 60,
+                "end_local": "2024-03-10 03:00:00",
+                "offset_after": "-04:00",
+                "offset_before": "-05:00",
+                "residual_sec": 0,
+                "source": "tail",
+                "start_local": "2024-03-10 02:00:00",
+                "type": "GAP"
+              },
+              {
+                "duration_min": 60,
+                "end_local": "2024-11-03 02:00:00",
+                "offset_after": "-05:00",
+                "offset_before": "-04:00",
+                "residual_sec": 0,
+                "source": "tail",
+                "start_local": "2024-11-03 01:00:00",
+                "type": "OVERLAP"
+              }
+            ],
+            "year": 2024
+          },
+          {
+            "windows": [
+              {
+                "duration_min": 60,
+                "end_local": "2026-03-08 03:00:00",
+                "offset_after": "-04:00",
+                "offset_before": "-05:00",
+                "residual_sec": 0,
+                "source": "tail",
+                "start_local": "2026-03-08 02:00:00",
+                "type": "GAP"
+              },
+              {
+                "duration_min": 60,
+                "end_local": "2026-11-01 02:00:00",
+                "offset_after": "-05:00",
+                "offset_before": "-04:00",
+                "residual_sec": 0,
+                "source": "tail",
+                "start_local": "2026-11-01 01:00:00",
+                "type": "OVERLAP"
+              }
+            ],
+            "year": 2026
+          }
+        ],
+        "zone": "America/New_York"
+      },
+      {
+        "years": [
+          {
+            "windows": [
+              {
+                "duration_min": 60,
+                "end_local": "2024-03-10 03:00:00",
+                "offset_after": "-07:00",
+                "offset_before": "-08:00",
+                "residual_sec": 0,
+                "source": "table",
+                "start_local": "2024-03-10 02:00:00",
+                "type": "GAP"
+              },
+              {
+                "duration_min": 60,
+                "end_local": "2024-11-03 02:00:00",
+                "offset_after": "-08:00",
+                "offset_before": "-07:00",
+                "residual_sec": 0,
+                "source": "table",
+                "start_local": "2024-11-03 01:00:00",
+                "type": "OVERLAP"
+              }
+            ],
+            "year": 2024
+          },
+          {
+            "windows": [
+              {
+                "duration_min": 60,
+                "end_local": "2026-03-08 03:00:00",
+                "offset_after": "-07:00",
+                "offset_before": "-08:00",
+                "residual_sec": 0,
+                "source": "table",
+                "start_local": "2026-03-08 02:00:00",
+                "type": "GAP"
+              }
+            ],
+            "year": 2026
+          }
+        ],
+        "zone": "America/Vancouver"
+      },
+      {
+        "years": [
+          {
+            "windows": [
+              {
+                "duration_min": 120,
+                "end_local": "2024-03-31 03:00:00",
+                "offset_after": "+02:00",
+                "offset_before": "+00:00",
+                "residual_sec": 0,
+                "source": "tail",
+                "start_local": "2024-03-31 01:00:00",
+                "type": "GAP"
+              },
+              {
+                "duration_min": 120,
+                "end_local": "2024-10-27 03:00:00",
+                "offset_after": "+00:00",
+                "offset_before": "+02:00",
+                "residual_sec": 0,
+                "source": "tail",
+                "start_local": "2024-10-27 01:00:00",
+                "type": "OVERLAP"
+              }
+            ],
+            "year": 2024
+          },
+          {
+            "windows": [
+              {
+                "duration_min": 120,
+                "end_local": "2026-03-29 03:00:00",
+                "offset_after": "+02:00",
+                "offset_before": "+00:00",
+                "residual_sec": 0,
+                "source": "tail",
+                "start_local": "2026-03-29 01:00:00",
+                "type": "GAP"
+              },
+              {
+                "duration_min": 120,
+                "end_local": "2026-10-25 03:00:00",
+                "offset_after": "+00:00",
+                "offset_before": "+02:00",
+                "residual_sec": 0,
+                "source": "tail",
+                "start_local": "2026-10-25 01:00:00",
+                "type": "OVERLAP"
+              }
+            ],
+            "year": 2026
+          }
+        ],
+        "zone": "Antarctica/Troll"
+      },
+      {
+        "years": [
+          {
+            "windows": [
+              {
+                "duration_min": 60,
+                "end_local": "2024-03-01 00:00:00",
+                "offset_after": "+05:00",
+                "offset_before": "+06:00",
+                "residual_sec": 0,
+                "source": "tail",
+                "start_local": "2024-02-29 23:00:00",
+                "type": "OVERLAP"
+              }
+            ],
+            "year": 2024
+          },
+          {
+            "windows": [],
+            "year": 2026
+          }
+        ],
+        "zone": "Asia/Almaty"
+      },
+      {
+        "years": [
+          {
+            "windows": [
+              {
+                "duration_min": 30,
+                "end_local": "2024-04-07 02:00:00",
+                "offset_after": "+10:30",
+                "offset_before": "+11:00",
+                "residual_sec": 0,
+                "source": "tail",
+                "start_local": "2024-04-07 01:30:00",
+                "type": "OVERLAP"
+              },
+              {
+                "duration_min": 30,
+                "end_local": "2024-10-06 02:30:00",
+                "offset_after": "+11:00",
+                "offset_before": "+10:30",
+                "residual_sec": 0,
+                "source": "tail",
+                "start_local": "2024-10-06 02:00:00",
+                "type": "GAP"
+              }
+            ],
+            "year": 2024
+          },
+          {
+            "windows": [
+              {
+                "duration_min": 30,
+                "end_local": "2026-04-05 02:00:00",
+                "offset_after": "+10:30",
+                "offset_before": "+11:00",
+                "residual_sec": 0,
+                "source": "tail",
+                "start_local": "2026-04-05 01:30:00",
+                "type": "OVERLAP"
+              },
+              {
+                "duration_min": 30,
+                "end_local": "2026-10-04 02:30:00",
+                "offset_after": "+11:00",
+                "offset_before": "+10:30",
+                "residual_sec": 0,
+                "source": "tail",
+                "start_local": "2026-10-04 02:00:00",
+                "type": "GAP"
+              }
+            ],
+            "year": 2026
+          }
+        ],
+        "zone": "Australia/Lord_Howe"
+      },
+      {
+        "years": [
+          {
+            "windows": [
+              {
+                "duration_min": 60,
+                "end_local": "2024-03-31 02:00:00",
+                "offset_after": "+01:00",
+                "offset_before": "+00:00",
+                "residual_sec": 0,
+                "source": "tail",
+                "start_local": "2024-03-31 01:00:00",
+                "type": "GAP"
+              },
+              {
+                "duration_min": 60,
+                "end_local": "2024-10-27 02:00:00",
+                "offset_after": "+00:00",
+                "offset_before": "+01:00",
+                "residual_sec": 0,
+                "source": "tail",
+                "start_local": "2024-10-27 01:00:00",
+                "type": "OVERLAP"
+              }
+            ],
+            "year": 2024
+          },
+          {
+            "windows": [
+              {
+                "duration_min": 60,
+                "end_local": "2026-03-29 02:00:00",
+                "offset_after": "+01:00",
+                "offset_before": "+00:00",
+                "residual_sec": 0,
+                "source": "tail",
+                "start_local": "2026-03-29 01:00:00",
+                "type": "GAP"
+              },
+              {
+                "duration_min": 60,
+                "end_local": "2026-10-25 02:00:00",
+                "offset_after": "+00:00",
+                "offset_before": "+01:00",
+                "residual_sec": 0,
+                "source": "tail",
+                "start_local": "2026-10-25 01:00:00",
+                "type": "OVERLAP"
+              }
+            ],
+            "year": 2026
+          }
+        ],
+        "zone": "Europe/Dublin"
+      },
+      {
+        "years": [
+          {
+            "windows": [
+              {
+                "duration_min": 60,
+                "end_local": "2024-04-07 03:45:00",
+                "offset_after": "+12:45",
+                "offset_before": "+13:45",
+                "residual_sec": 0,
+                "source": "tail",
+                "start_local": "2024-04-07 02:45:00",
+                "type": "OVERLAP"
+              },
+              {
+                "duration_min": 60,
+                "end_local": "2024-09-29 03:45:00",
+                "offset_after": "+13:45",
+                "offset_before": "+12:45",
+                "residual_sec": 0,
+                "source": "tail",
+                "start_local": "2024-09-29 02:45:00",
+                "type": "GAP"
+              }
+            ],
+            "year": 2024
+          },
+          {
+            "windows": [
+              {
+                "duration_min": 60,
+                "end_local": "2026-04-05 03:45:00",
+                "offset_after": "+12:45",
+                "offset_before": "+13:45",
+                "residual_sec": 0,
+                "source": "tail",
+                "start_local": "2026-04-05 02:45:00",
+                "type": "OVERLAP"
+              },
+              {
+                "duration_min": 60,
+                "end_local": "2026-09-27 03:45:00",
+                "offset_after": "+13:45",
+                "offset_before": "+12:45",
+                "residual_sec": 0,
+                "source": "tail",
+                "start_local": "2026-09-27 02:45:00",
+                "type": "GAP"
+              }
+            ],
+            "year": 2026
+          }
+        ],
+        "zone": "Pacific/Chatham"
+      },
+      {
+        "years": [
+          {
+            "windows": [],
+            "year": 2024
+          },
+          {
+            "windows": [],
+            "year": 2026
+          }
+        ],
+        "zone": "UTC"
+      }
+    ],
+    "sampled_zones": [
+      "Africa/Cairo",
+      "Africa/Casablanca",
+      "Africa/Ceuta",
+      "Africa/El_Aaiun",
+      "America/Adak",
+      "America/Anchorage",
+      "America/Asuncion",
+      "America/Atka",
+      "America/Boise",
+      "America/Cambridge_Bay",
+      "America/Chicago",
+      "America/Ciudad_Juarez",
+      "America/New_York",
+      "America/Vancouver",
+      "Antarctica/Troll",
+      "Asia/Almaty",
+      "Australia/Lord_Howe",
+      "Europe/Dublin",
+      "Pacific/Chatham",
+      "UTC"
+    ],
+    "total_windows": 807,
+    "windows_errors": 0,
+    "zones": 598
+  },
+  "input": {
+    "kind": "slim",
+    "pypi_version": "2026.2",
+    "sample_zones": [
+      "America/New_York",
+      "America/Vancouver",
+      "Australia/Lord_Howe",
+      "Pacific/Chatham",
+      "Europe/Dublin",
+      "Asia/Almaty",
+      "Antarctica/Troll",
+      "UTC"
+    ],
+    "sha256": "bbe9af844f658da81a5f95019480da3a89415801f6cc966806612cc7169bffe7",
+    "tree": "data/_downloads/slim/2026b",
+    "version": "2026b",
+    "years": [
+      2024,
+      2026
+    ]
+  },
+  "schema": 1,
+  "suite": "windows"
+}

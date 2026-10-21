@@ -12,6 +12,7 @@
 
 ``parse``     TZif 字节解析的聚合量（zone 数 / 零解析错误 / 转换点总数 / 树指纹）。
 ``timeline``  双引擎合并后的量（抽样 zone 的转换点数、tail 展开点数、refine 抽样）。
+``windows``   墙钟风险窗口（抽样 zone 在抽样年份的 GAP / OVERLAP 窗口集合）。
 
 判据（`plan/04` §二）：
 - ``parse_errors`` 必须为 0（全量树零解析错误）。
@@ -45,6 +46,8 @@ SLIM_DIR = os.path.join(DOWNLOAD_DIR, "slim")
 
 sys.path.insert(0, os.path.join(ROOT, "src"))
 
+from tzaudit import civil  # noqa: E402 - 日历换算（与生产实现同一份，整数运算）
+
 #: 抽样对拍必须覆盖的形态（`plan/04` §二.2 要求"含三种特殊形态"）
 SAMPLE_ZONES = (
     "Europe/Dublin",        # 负 DST（冬季 is_dst=1）
@@ -73,7 +76,22 @@ TIMELINE_TRANSITION_PROBES = 8
 EXPECT_SCHEMA = 1
 
 #: 套件名（``--suite`` 的可选值；缺省 = 全部）
-SUITES = ("parse", "timeline")
+SUITES = ("parse", "timeline", "windows")
+
+#: windows 套件扫描的年份（**输入常量**，不是观测值）
+WINDOWS_YEARS = (2024, 2026)
+
+#: windows 套件额外抽样 zone 名单（固定名单；覆盖三种特殊形态 + 反例形态）
+WINDOWS_SAMPLE_ZONES = (
+    "America/New_York",     # 整小时 GAP + OVERLAP
+    "America/Vancouver",    # 反例：2026 起永久 UTC-7 → 无 OVERLAP
+    "Australia/Lord_Howe",  # 30 分钟窗口
+    "Pacific/Chatham",      # +12:45 非整点
+    "Europe/Dublin",        # 负 DST
+    "Asia/Almaty",          # 跨年边界（2024-02-29 23:00 → 03-01 00:00）
+    "Antarctica/Troll",     # 2 小时窗口
+    "UTC",                  # 零窗口
+)
 
 
 def build_parser():
@@ -397,6 +415,213 @@ def cross_check_timeline(tree_dir):
     return checked, mismatches
 
 
+# ---------------------------------------------------------------- windows 套件
+
+
+def _windows_zone_list(available, window_bearing):
+    """windows 套件抽样的 zone 名单（固定名单 + **有窗口的** zone 按字节序补足）。
+
+    固定名单必须覆盖：整小时 / 30 分钟 / 非整点 / 负 DST / 跨年边界 / **零窗口**。
+
+    补足时**优先挑有窗口的 zone**——若按字节序随便补，多数 zone 会是"零窗口"的
+    （``Africa/*`` 大多没有 DST），抽样集就会退化成"一堆空行"（判据等于没验）。
+    ``window_bearing`` 是**由输入决定**的集合（扫描全量树得出），不是观测值。
+    """
+    from tzaudit.zoneinfo_store import byte_key
+
+    wanted = [z for z in WINDOWS_SAMPLE_ZONES if z in available]
+    for zone in sorted(window_bearing, key=byte_key):
+        if len(wanted) >= MIN_SAMPLE:
+            break
+        if zone not in wanted:
+            wanted.append(zone)
+    # 仍然不够（树太小）→ 按字节序补零窗口的 zone（分母不得为 0）
+    for zone in sorted(available, key=byte_key):
+        if len(wanted) >= MIN_SAMPLE:
+            break
+        if zone not in wanted:
+            wanted.append(zone)
+    return wanted
+
+
+def windows_stats(tree_dir):
+    """墙钟风险窗口层的**只由输入决定**的统计量。
+
+    ``stats`` 里只放"输入 + 期望"，不含任何观测/耗时字段：
+
+    - ``zones``：口径分母（树里的 zone 数）。
+    - ``windows_errors``：扫描时的异常数（必须 0）。
+    - ``total_windows``：**全量树**在抽样年份里的窗口总数（分母口径的总量）。
+    - ``sampled_zones``：参与抽样的 zone（固定名单 + 有窗口的 zone 按字节序补足）。
+    - ``sampled``：每个抽样 zone 在每个抽样年份的窗口集合（``type`` / 起止墙钟 / 时长 /
+      前后偏移 / ``source``）。
+    """
+    from tzaudit import timeline, windows
+    from tzaudit.zoneinfo_store import ZoneinfoStore, byte_key
+
+    store = ZoneinfoStore(tree_dir)
+    names = store.zones()
+
+    # 第一遍：全量扫描（分母口径 + 找出"有窗口的 zone"）
+    errors = []
+    per_zone = {}
+    total_windows = 0
+    for zone in names:
+        rows = []
+        for year in WINDOWS_YEARS:
+            try:
+                tl = timeline.load_timeline(
+                    zone, store,
+                    window_start=civil.epoch_from_local_naive(year, 1, 1) - 2 * 86400,
+                    window_end=civil.epoch_from_local_naive(year + 1, 1, 1) + 2 * 86400)
+                found = windows.scan_year(zone, year, tl)
+            except Exception as exc:  # 任何失败都进 errors（不吞）
+                errors.append("%s %d: %s: %s" % (zone, year, type(exc).__name__, exc))
+                continue
+            rows.append({
+                "year": year,
+                "windows": [{
+                    "type": item.type,
+                    "start_local": civil.format_local(item.start_local),
+                    "end_local": civil.format_local(item.end_local),
+                    "duration_min": item.duration_min,
+                    "residual_sec": item.residual_sec,
+                    "offset_before": civil.format_offset(item.offset_before),
+                    "offset_after": civil.format_offset(item.offset_after),
+                    "source": item.source,
+                } for item in found],
+            })
+        count = sum(len(row["windows"]) for row in rows)
+        total_windows += count
+        if count:
+            per_zone[zone] = rows
+
+    wanted = _windows_zone_list(set(names), set(per_zone))
+    sampled = [{"zone": zone,
+                "years": per_zone.get(zone, [{"year": year, "windows": []}
+                                              for year in WINDOWS_YEARS])}
+               for zone in wanted]
+    sampled.sort(key=lambda item: byte_key(item["zone"]))
+
+    stats = {
+        "zones": len(names),
+        "windows_errors": len(errors),
+        "years": list(WINDOWS_YEARS),
+        "total_windows": total_windows,
+        "sampled_zones": [item["zone"] for item in sampled],
+        "sampled": sampled,
+    }
+    return stats, errors
+
+
+def cross_check_windows(tree_dir):
+    """windows 层与 ``tests/reference.py`` 对拍 → ``(checked, mismatches)``。
+
+    参照实现给的是"每个本地墙钟的 UTC 候选集合"（区间包含式）；生产实现给的是
+    "墙钟窗口区间"。这里把两者**对起来**：参照实现独立算出窗口区间（转换点两侧
+    offset 的差 → 墙钟区间 → 逐点复核候选数），必须与生产实现**逐条相等**。
+    """
+    if os.path.join(ROOT, "tests") not in sys.path:
+        sys.path.insert(0, os.path.join(ROOT, "tests"))
+    try:
+        import reference
+    except ImportError as exc:
+        return 0, ["参照实现不可用: %s" % exc]
+
+    from tzaudit import timeline, windows
+    from tzaudit.zoneinfo_store import ZoneinfoStore
+
+    store = ZoneinfoStore(tree_dir)
+    available = set(store.zones())
+
+    # 抽样名单必须与 ``windows_stats`` **同一份口径**（两处各算一套会让对拍形同虚设）
+    window_bearing = set()
+    for zone in sorted(available, key=lambda name: name.encode("utf-8")):
+        for year in WINDOWS_YEARS:
+            try:
+                tl = timeline.load_timeline(
+                    zone, store,
+                    window_start=civil.epoch_from_local_naive(year, 1, 1) - 2 * 86400,
+                    window_end=civil.epoch_from_local_naive(year + 1, 1, 1) + 2 * 86400)
+                if windows.scan_year(zone, year, tl):
+                    window_bearing.add(zone)
+                    break
+            except Exception:
+                continue
+    wanted = _windows_zone_list(available, window_bearing)
+
+    checked = 0
+    mismatches = []
+    for zone in wanted:
+        raw = store.read_zone(zone)
+        for year in WINDOWS_YEARS:
+            start = civil.epoch_from_local_naive(year, 1, 1) - 2 * 86400
+            end = civil.epoch_from_local_naive(year + 1, 1, 1) + 2 * 86400
+            try:
+                ours_tl = timeline.load_timeline(zone, store, window_start=start, window_end=end)
+                theirs = reference.read_timeline(raw, start, end)
+            except Exception as exc:
+                mismatches.append("%s %d: 对拍异常 %s: %s" % (zone, year, type(exc).__name__, exc))
+                continue
+
+            ours = windows.scan_year(zone, year, ours_tl)
+            expected = _reference_windows(theirs, year, start, end)
+            got = [(item.type, item.start_local, item.end_local) for item in ours]
+            want = [(kind, lo, hi) for kind, lo, hi in expected]
+            if got != want:
+                mismatches.append("%s %d: 窗口集合不一致（我们 %r / 参照 %r）"
+                                  % (zone, year, got, want))
+                continue
+            checked += 1
+
+    if checked < MIN_SAMPLE:
+        mismatches.append("windows 对拍样本不足：%d < %d" % (checked, MIN_SAMPLE))
+    return checked, mismatches
+
+
+def _reference_windows(theirs, year, start, end):
+    """参照实现独立算出的墙钟窗口 → ``[(type, start_local, end_local)]``。
+
+    与生产实现**不同路**：
+    - 生产实现：枚举全部候选 offset + 自洽校验（``timeline.resolve_local``）；
+    - 参照实现：段区间包含式（``reference.RefTimeline.resolve_local``）。
+    """
+    points = [start_utc for start_utc in theirs.starts
+              if start_utc != -(1 << 62) and start <= start_utc < end]
+    found = []
+    for point in points:
+        before = theirs.state_at(point - 1)[0]
+        after = theirs.state_at(point)[0]
+        if before == after:
+            continue
+        if after > before:
+            kind, low, high = "GAP", point + before, point + after
+        else:
+            kind, low, high = "OVERLAP", point + after, point + before
+        if civil.local_naive_from_epoch(low)[0] != year:
+            continue
+        # 复核（与生产实现同口径，但走参照实现的候选算法）
+        ok = True
+        for local in range(low, high):
+            candidates = theirs.resolve_local(local)
+            if kind == "GAP":
+                if candidates:
+                    ok = False
+                    break
+            else:
+                if len(candidates) != 2:
+                    ok = False
+                    break
+                if candidates[0][1] == candidates[1][1]:
+                    ok = False
+                    break
+        if not ok:
+            continue
+        found.append((kind, low, high))
+    found.sort(key=lambda item: (item[1], item[0]))
+    return found
+
+
 # ---------------------------------------------------------------- regen / check
 
 
@@ -455,6 +680,34 @@ def _timeline_doc(version, tree_dir, stats, cross_checked):
 TIMELINE_KEYS = ("zones", "timeline_errors", "sampled_zones", "sampled_transitions",
                  "sampled_tail_points", "sampled")
 
+WINDOWS_KEYS = ("zones", "windows_errors", "total_windows", "sampled_zones", "sampled")
+
+
+def _windows_doc(version, tree_dir, stats, cross_checked):
+    """windows 套件的金标（**只存输入 + 期望**，不存观测）。"""
+    prov = _provenance(tree_dir)
+    return {
+        "schema": EXPECT_SCHEMA,
+        "suite": "windows",
+        "input": {
+            "version": version,
+            "kind": prov.get("kind"),
+            "pypi_version": prov.get("pypi_version"),
+            "sha256": prov.get("sha256"),
+            "tree": "data/_downloads/slim/%s" % version,
+            "years": stats["years"],
+            "sample_zones": list(WINDOWS_SAMPLE_ZONES),
+        },
+        "expected": {
+            "zones": stats["zones"],
+            "windows_errors": stats["windows_errors"],
+            "total_windows": stats["total_windows"],
+            "sampled_zones": stats["sampled_zones"],
+            "sampled": stats["sampled"],
+            "reference_cross_checked": cross_checked,
+        },
+    }
+
 
 def _write_doc(target_dir, filename, doc):
     if not os.path.isdir(target_dir):
@@ -472,6 +725,10 @@ def _write_expect(version, doc):
 
 def _write_timeline_expect(version, doc):
     return _write_doc(os.path.join(TZDB_DIR, version), "expect-timeline.json", doc)
+
+
+def _write_windows_expect(version, doc):
+    return _write_doc(os.path.join(TZDB_DIR, version), "expect-windows.json", doc)
 
 
 def regen(trees, suites=SUITES):
@@ -524,6 +781,39 @@ def regen(trees, suites=SUITES):
             print("  %s timeline → %s  zone 抽样=%d  转换点=%d  tail 点=%d  对拍=%d"
                   % (version, os.path.relpath(path, ROOT), len(stats["sampled"]),
                      stats["sampled_transitions"], stats["sampled_tail_points"], checked))
+
+        if "windows" in suites:
+            stats, errors = windows_stats(tree_dir)
+            if stats["zones"] <= 0:
+                problems.append("%s: windows 树里 0 个 zone（分母空跑）" % version)
+                continue
+            if errors:
+                problems.append("%s: %d 处 windows 错误（例: %s）"
+                                % (version, len(errors), errors[0]))
+                continue
+            if not stats["sampled"]:
+                problems.append("%s: windows 抽样集为空（判据空跑）" % version)
+                continue
+            # 抽样集必须**真的**覆盖 GAP 与 OVERLAP 两种（否则等于没验）
+            kinds = {row["type"] for item in stats["sampled"]
+                     for year_row in item["years"] for row in year_row["windows"]}
+            if not {"GAP", "OVERLAP"} <= kinds:
+                problems.append("%s: windows 抽样集缺 GAP/OVERLAP 之一（实际=%r）"
+                                % (version, sorted(kinds)))
+                continue
+            checked, mismatches = cross_check_windows(tree_dir)
+            if mismatches:
+                for item in mismatches:
+                    problems.append("%s: %s" % (version, item))
+                continue
+            path = _write_windows_expect(
+                version, _windows_doc(version, tree_dir, stats, checked))
+            written += 1
+            window_count = sum(len(year_row["windows"])
+                               for item in stats["sampled"] for year_row in item["years"])
+            print("  %s windows → %s  zone 抽样=%d  窗口=%d  对拍=%d"
+                  % (version, os.path.relpath(path, ROOT), len(stats["sampled"]),
+                     window_count, checked))
 
     print("=" * 56)
     if problems:
@@ -620,6 +910,42 @@ def _check_timeline(tree_dir, version, bad):
              stats["sampled_tail_points"], checked))
 
 
+def _check_windows(tree_dir, version, bad):
+    """windows 套件的复算与比对。"""
+    stats, errors = windows_stats(tree_dir)
+
+    expect = _load_doc(version, "expect-windows.json")
+    if expect is None:
+        bad.append("%s: 缺 expect-windows.json（跑 --regen --suite windows）" % version)
+        return
+    if expect == "BROKEN":
+        bad.append("%s: expect-windows.json 不是合法 JSON" % version)
+        return
+
+    if stats["windows_errors"] != 0:
+        bad.append("%s: windows_errors=%d（必须 0）；例: %s"
+                   % (version, stats["windows_errors"], errors[0] if errors else "-"))
+    if stats["zones"] <= 0:
+        bad.append("%s: windows zones=0（分母空跑）" % version)
+    if not stats["sampled"]:
+        bad.append("%s: windows 抽样集为空（判据空跑）" % version)
+
+    expected = expect.get("expected") or {}
+    for key in WINDOWS_KEYS:
+        if expected.get(key) != stats[key]:
+            bad.append("%s: windows.%s 漂移（期望=%r 实测=%r）"
+                       % (version, key, expected.get(key), stats[key]))
+
+    checked, mismatches = cross_check_windows(tree_dir)
+    if mismatches:
+        bad.extend("%s: %s" % (version, item) for item in mismatches)
+
+    window_count = sum(len(year_row["windows"])
+                       for item in stats["sampled"] for year_row in item["years"])
+    print("  %-7s windows 抽样=%-3d 窗口=%-4d 对拍=%d"
+          % (version, len(stats["sampled"]), window_count, checked))
+
+
 def check(trees, suites=SUITES):
     """复算并与入仓金标比对。分母 > 0 是硬门槛。"""
     versions = _tzdb_versions()
@@ -659,6 +985,9 @@ def check(trees, suites=SUITES):
         if "timeline" in suites:
             _check_timeline(tree_dir, version, bad)
 
+        if "windows" in suites:
+            _check_windows(tree_dir, version, bad)
+
     print("=" * 56)
     print("复算项数: %d（分母必须 > 0）" % denominator)
     print("不一致: %d" % len(bad))
@@ -673,8 +1002,10 @@ def check(trees, suites=SUITES):
     if "parse" in suites:
         print("结论: 全量树 %d 个 zone 零解析错误，%d 份金标复算一致"
               % (zones_seen, denominator))
-    else:
+    elif "timeline" in suites:
         print("结论: %d 份 timeline 金标复算一致" % denominator)
+    else:
+        print("结论: %d 份 windows 金标复算一致" % denominator)
     return EXIT_OK
 
 

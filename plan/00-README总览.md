@@ -23,6 +23,7 @@
 | `plan/05-里程碑与发布.md` | 每里程碑 DoD、已知未验证项、环境事实、风险预案、发布流程 | ✅ v1（M0） |
 | `plan/06-交付对标与决策.md` | 题面 §二/§三逐条落位、缺口表、待定决策表、发布前检查清单 | ✅ v1（M0） |
 | `plan/HANDOFF-M1.md` | M0 收尾交接单（七节）：M1 待办 / K 口径 / 环境坑 / DoD / 命令速查 | ✅ v1（M0） |
+| `plan/HANDOFF-M4.md` | M3 收尾交接单（七节）：M4 待办 / K 口径 / 环境坑 / DoD / 命令速查 | ✅ v1（M3） |
 | `plan/RELEASE-M6.md` | 发布留档（tag 时点事实 / tag 后追加事实分栏） | ⬜ 待 M6 |
 
 > 索引状态列随里程碑同步翻转；不得在一处标 ✅ 而在另一处标 ⬜。
@@ -47,6 +48,8 @@
 | 2026-10-21 | **⑧ TZif 解析器从 M2 前移到 M1** | `plan/04` §二把"全量树零解析错误"定为 M1 的判据正确性门槛，而这条判据**必须有真解析器**才成立——用"只数 zone 数"的降级形态会让 `parse_errors` 恒为 0（空跑，与"没扫到"同形）。因此 `tzif.parse` 在 M1 落地，M2 只在其上做 `posix_tz` + `timeline`。**签名与数据结构未改**（`TzifData` 五字段、`parse(data, zone)`）。 |
 | 2026-10-21 | **⑨ `is_slim` 判据落在 v1 块，不是 v2 块** | 实测 2026e 树：598 个 zone **全部** `v1 timecnt=0`、真实转换点在 v2 块。若判据落在 v2 块，"表很长"的 slim 文件会被误判成非 slim（实测 586 个 v2 文件 v2 块有 71–175 个转换点）。该值**仅用于输出说明，不参与任何判定**。 |
 | 2026-10-21 | **⑩ 入仓 NEWS 只留首版发布块，且原样保留上游笔误** | 完整 `NEWS` 每版本 260KB（含全部历史），五版本入仓等于五份重复历史。只取首个 `Release` 块。**上游 2026b 的 `NEWS` 头确实误写成 `Release 2026a`**——原样保留、由测试显式豁免，不代改上游数据（改了就不可溯源）。2026d 的伊朗句原文用 U+2019 弯引号，`plan/01` 引用时写的是直引号；金标按**原文**断言。 |
+| 2026-10-21 | **⑪【M3】墙钟窗口按"本地墙钟年份"归属，不按 UTC 年份** | 转换点是 **UTC 时刻**，而窗口是**墙钟区间**——两者可能跨年（实测 `Asia/Almaty` 2024 的窗口是 `2024-02-29 23:00 → 03-01 00:00`）。只按 UTC 年份取点会把跨年窗口**漏掉或错记到别的年份**。因此扫描窗口在年份边界外多留 **2 天余量**（实测 2026e 树最大偏移 57368 秒 ≈ 15.94h，2 天足够覆盖），再按 `start_local` 的本地年过滤。**这条不改口径**（`data/README.md` §4.1 只定义"窗口排序"，没定义"归属哪一年"），是实现层的必要补全，已登记在 `plan/03` §五。 |
+| 2026-10-21 | **⑫【M3】退出码 5 的退役是"逐条退役"，不是"整项退役"** | 原设想是 `windows` 落地即删 `errors.EXIT_NOT_READY` 常量。实测：`diff`/`audit`/`report` **三条还在骨架期**，删了常量它们就**无处可退 5**（会变成 1 = "internal error"，语义完全不同）。故改为：`windows` 退出该语义（`cli` 不再分派给它、`test_exit_codes.py` 删掉那一行、文档两处同步），**常量保留**给剩下三条。`data/README.md` §4.4 已补记"M3 进度"行——**四处同步少一处 = 幽灵语义复活**。 |
 | 2026-10-20 | 弃选：**C4 日历规则 / 节假日** | `vacanza/holidays` 1958★ 已占位；ISO 周是标准库一行（`date.isocalendar()`）；阴阳历/复活节等需要权威离线源，本仓库无法保证数据来源的可用性（预检①/②过不了）。 |
 | 2026-10-20 | 弃选：**cron / RRULE 解析** | 明令避开（见决策⑥），且已有成熟项目占位。写进题面 §六 的"不做"清单，防止后续被"顺手加一下"侵蚀。 |
 | 2026-10-20 | 弃选：**按小时采样 UTC 偏移型** | 这正是 `tzdrift`（0★, 2026-10-18）与 `jodastephen/tzdiff`（3★）的形态。原理上：采样不产生墙钟区间（缺反解）、`now()` 起点看不见历史。与之同构=把 0★ 的定位复制一遍，且拿不到差异。 |
@@ -84,11 +87,11 @@
 | slim / fat 两种构建语义等价 | 2026a/2026e 源码包与 wheel（✅） | `timeline.py` 的 `source: table\|tail` | 同版本 slim 与 fat 对同一 zone 语义一致 | ✅ M2（重叠区间语义等价；两个 fixture：同规则三编码 + 同版本真实数据；实测 6 zone × 350640 小时零差异） |
 | 与独立参照实现对拍 | PEP 495 `fold` 语义（✅ 标准） | `timeline.py` 的 `roundtrip` | 对拍一致（数量以末态回填，不写死 20/20） | ✅ M2（`tests/reference.py` 用 `datetime` + 段区间包含式；全 598 zone 转换点邻域 96680 点 + 抽样 767832 点零不一致；`bench` 侧每版本抽 20 zone） |
 | 本地→UTC 反解（竞品缺失的那一步） | 时间线结构（✅） | `timeline.resolve_local()` | gap / overlap 双向用例各至少一条 | ✅ M2（`test_timeline.py` 的 NY 2026 gap/overlap + 全年逐小时 roundtrip；金标候选数集合 = {0,1,2}） |
-| **GAP 墙钟区间** | 2026 年真实数据（✅ 实测有 gap 的 zone 存在） | `windows` 的 `type=GAP` | America/New_York 2026 `02:00→03:00` | ⬜ 待 M3 |
-| **OVERLAP 墙钟区间** | 同上（✅） | `windows` 的 `type=OVERLAP` | 同 zone `01:00→02:00` | ⬜ 待 M3 |
-| 双判据（防 gap/overlap 互误报） | `data/README.md` §四单点定义 | `windows` 判定函数 | **Vancouver 2026 零误报**（反例单测） | ⬜ 待 M3 |
+| **GAP 墙钟区间** | 2026 年真实数据（✅ 实测有 gap 的 zone 存在） | `windows` 的 `type=GAP` | America/New_York 2026 `02:00→03:00` | ✅ M3（`windows.scan_year` 落地；NY 2026 GAP `02:00→03:00` 方向正确；`duration_min`/`residual_sec` 按整分钟+残差拆；双判据复核后输出） |
+| **OVERLAP 墙钟区间** | 同上（✅） | `windows` 的 `type=OVERLAP` | 同 zone `01:00→02:00` | ✅ M3（NY 2026 OVERLAP `01:00→02:00`；排序按 `start_local` 升序 → `type` 字典序） |
+| 双判据（防 gap/overlap 互误报） | `data/README.md` §四单点定义 | `windows` 判定函数 | **Vancouver 2026 零误报**（反例单测） | ✅ M3（`resolve_local` 候选个数判据 + 逐候选复核；Vancouver 2026 只有 GAP 零 OVERLAP，2025 仍有 OVERLAP 作反向对照） |
 | POSIX tail 解析（三类规则 + `/time`） | 2026e 源码包 tail 字符串（✅） | `posix_tz.py` | `Jn` / `n` / `Mm.w.d` 各一条；`/time` 为墙钟秒的断言 | ✅ M2（`test_posix_tz.py` 三类规则 + 负/超 24h `/time`；三条技术坑各一反例；fixture 7 条金标含中间量） |
-| 负 DST / 30 分钟 / 非整点 | Dublin / Lord_Howe / Chatham（✅ 真实 zone） | `windows` + `diff` | 三个 zone 各一条 fixture 金标 | ⬜ 待 M3 |
+| 负 DST / 30 分钟 / 非整点 | Dublin / Lord_Howe / Chatham（✅ 真实 zone） | `windows` + `diff` | 三个 zone 各一条 fixture 金标 | ✅ M3（Dublin 负 DST 方向正确、Lord_Howe 30 分钟、Chatham 45 分钟偏移；三条都在 `data/fixtures/windows/` 金标 + 真实树各一条） |
 | 四类变更互斥分类 | 2026a–2026e（✅） | `diff` 的 `changes[class]` | 判定顺序固定；Vancouver 为 `future_rule` + `evidence=tail` | ⬜ 待 M4 |
 | **历史重解释可被 diff 出来** | IANA `NEWS` 原文 2026e / 2026d（✅） | `diff` 的 `history_reinterpreted` | Dublin(1925) / Tehran(1979) 金标 | ⬜ 待 M4 |
 | 窗口内变化 zone 清单 | 五个真实版本（✅） | `diff --window` 输出 | 与金标名单一致（名单以末态回填，不写死 11） | ⬜ 待 M4 |
@@ -99,7 +102,7 @@
 | 报告头三字段 | — | `report` 的 `data_version/zones_covered/generated_at` | 缺任一字段即测试失败 | ⬜ 待 M5 |
 | `--fail-on` 门禁语义 | `data/README.md` §四单点定义 | `report` 退出码 | 四组退出码测试（无命中/gap/overlap/history） | ⬜ 待 M5 |
 | 五版本金标可复算 | 2026a–2026e（✅ 实拉） | `bench/run.py` → `data/tzdb/*/expect.json` | 干净环境重跑一致 | ✅ M1（5 版本 × 598 zone 零解析错误；`--check` 退 0） |
-| fixture 可重建 | 生成脚本固定输入 | `data/fixtures/**/gen.py` | `--check` 重生成逐字节一致 | 3 组已落地并带 `--check`（`tzif/slim-vs-fat`、`tzif/source-vs-wheel`、`posix/three-rule-forms`）；`windows/diff/audit` 三组待 M3–M5 |
+| fixture 可重建 | 生成脚本固定输入 | `data/fixtures/**/gen.py` | `--check` 重生成逐字节一致 | 4 组已落地并带 `--check`（`tzif/slim-vs-fat`、`tzif/source-vs-wheel`、`posix/three-rule-forms`、`windows/wall-clock-windows`）；`diff`/`audit` 两组待 M4–M5 |
 | 零网络 / 零遥测 | — | 全部子命令 | 断网跑通；代码内无 HTTP 客户端 | ⬜ 待 M6 |
 | README 四场景复现 | — | `README.md` | 干净 clone 按 README 跑通 | ⬜ 待 M6 |
 | 发布三件套 | — | tag / Release 附产物 / `plan/RELEASE-M6.md` | tag 树内含留档；Release 有附件 + 本地副本 + sha256 | ⬜ 待 M6 |
@@ -127,7 +130,7 @@
 | M0 | 出题定稿 + 方法论装订 + 可运行骨架 | `plan/00–06` 齐；`AGENTS.md` + `tools/check-sprint-layout.py` + `plan/00` 装订行；布局门 10 组变异 10/10 按预期；`tzaudit --help` / `--version` 退 0；`pytest` 70 项两通道全绿；脱敏门绿 | ✅ 已完成（2026-10-21） |
 | **M1** | **数据先行** | 下载 **2026a–2026e 五个真实版本**（tar.gz 不入仓，只入解包后的必要文本）；`data/tzdb/<ver>/provenance.json` 记录来源 URL + sha256 + 版本号；`bench/run.py --check` 可跑 | ✅ 已完成（2026-10-21） |
 | M2 | **TZif 双引擎** | `tzif.py` + `posix_tz.py` + `timeline.py`；本地树全量 zone 零解析错误；与独立参照实现对拍一致；slim/fat 语义等价；三条技术坑各一反面单测 | ✅ 已完成（2026-10-21） |
-| M3 | **墙钟窗口表 `windows`** | America/New_York 2026 两窗口方向正确；**Vancouver 2026 零误报**；负 DST / 30 分钟 / 非整点三 zone 金标；`--all --year` 可跑完 | ⬜ |
+| M3 | **墙钟窗口表 `windows`** | America/New_York 2026 两窗口方向正确；**Vancouver 2026 零误报**；负 DST / 30 分钟 / 非整点三 zone 金标；`--all --year` 可跑完 | ✅ 已完成（2026-10-21） |
 | M4 | **版本差异分类 `diff`** | 四类互斥且顺序固定；Vancouver → `future_rule`（`evidence=tail`）；Dublin 1925 / Tehran 1979 → `history_reinterpreted`；2026a↔2026e 名单与金标一致 | ⬜ |
 | M5 | **清单审计 `audit` + 报告门禁** | 四类判定各一条；BC 场景"同一 UTC 两版本两墙钟"复现；报告头三字段；`--fail-on` 四组退出码测试 | ⬜ |
 | M6 | 发布 | **git tag（`v0.1.0`）+ GitHub Release（附产物：手工源码包，本地留副本 + sha256）+ 发布留档 `plan/RELEASE-M6.md`（tag 前落盘、tag 后分栏追加）**；干净环境按 README 跑通四场景；断网跑通；提交面脱敏（含 tag tagger 邮箱）；发布 GitHub **公开仓库** | ⬜ |

@@ -1,0 +1,175 @@
+{
+  "expected": {
+    "windows": [
+      {
+        "note": "美式整小时 DST",
+        "windows": [
+          {
+            "duration_min": 60,
+            "end_local": "2026-03-08 03:00:00",
+            "offset_after": "-04:00",
+            "offset_before": "-05:00",
+            "residual_sec": 0,
+            "start_local": "2026-03-08 02:00:00",
+            "type": "GAP"
+          },
+          {
+            "duration_min": 60,
+            "end_local": "2026-11-01 02:00:00",
+            "offset_after": "-05:00",
+            "offset_before": "-04:00",
+            "residual_sec": 0,
+            "start_local": "2026-11-01 01:00:00",
+            "type": "OVERLAP"
+          }
+        ],
+        "year": 2026,
+        "zone": "Zone/Standard"
+      },
+      {
+        "note": "30 分钟 DST（Lord_Howe 式）；南半球：先回拨再起跳",
+        "windows": [
+          {
+            "duration_min": 30,
+            "end_local": "2026-04-05 02:00:00",
+            "offset_after": "+10:30",
+            "offset_before": "+11:00",
+            "residual_sec": 0,
+            "start_local": "2026-04-05 01:30:00",
+            "type": "OVERLAP"
+          },
+          {
+            "duration_min": 30,
+            "end_local": "2026-10-04 02:30:00",
+            "offset_after": "+11:00",
+            "offset_before": "+10:30",
+            "residual_sec": 0,
+            "start_local": "2026-10-04 02:00:00",
+            "type": "GAP"
+          }
+        ],
+        "year": 2026,
+        "zone": "Zone/HalfHour"
+      },
+      {
+        "note": "+12:45 非整点（Chatham 式）",
+        "windows": [
+          {
+            "duration_min": 60,
+            "end_local": "2026-04-05 03:45:00",
+            "offset_after": "+12:45",
+            "offset_before": "+13:45",
+            "residual_sec": 0,
+            "start_local": "2026-04-05 02:45:00",
+            "type": "OVERLAP"
+          },
+          {
+            "duration_min": 60,
+            "end_local": "2026-09-27 03:45:00",
+            "offset_after": "+13:45",
+            "offset_before": "+12:45",
+            "residual_sec": 0,
+            "start_local": "2026-09-27 02:45:00",
+            "type": "GAP"
+          }
+        ],
+        "year": 2026,
+        "zone": "Zone/QuarterHour"
+      },
+      {
+        "note": "负 DST（Dublin 式）：冬季 offset=0 且 is_dst=True",
+        "windows": [
+          {
+            "duration_min": 60,
+            "end_local": "2026-03-29 02:00:00",
+            "offset_after": "+01:00",
+            "offset_before": "+00:00",
+            "residual_sec": 0,
+            "start_local": "2026-03-29 01:00:00",
+            "type": "GAP"
+          },
+          {
+            "duration_min": 60,
+            "end_local": "2026-10-25 02:00:00",
+            "offset_after": "+00:00",
+            "offset_before": "+01:00",
+            "residual_sec": 0,
+            "start_local": "2026-10-25 01:00:00",
+            "type": "OVERLAP"
+          }
+        ],
+        "year": 2026,
+        "zone": "Zone/NegativeDst"
+      },
+      {
+        "note": "无 DST → 零窗口（反例：无窗口 ≠ 没扫描）",
+        "windows": [],
+        "year": 2026,
+        "zone": "Zone/NoDst"
+      },
+      {
+        "note": "陷阱：表内额外插入一个'offset 不变、只换缩写'的转换点 → 不得报窗口",
+        "windows": [
+          {
+            "duration_min": 60,
+            "end_local": "2026-03-08 03:00:00",
+            "offset_after": "-04:00",
+            "offset_before": "-05:00",
+            "residual_sec": 0,
+            "start_local": "2026-03-08 02:00:00",
+            "type": "GAP"
+          },
+          {
+            "duration_min": 60,
+            "end_local": "2026-11-01 02:00:00",
+            "offset_after": "-05:00",
+            "offset_before": "-04:00",
+            "residual_sec": 0,
+            "start_local": "2026-11-01 01:00:00",
+            "type": "OVERLAP"
+          }
+        ],
+        "year": 2026,
+        "zone": "Zone/AbbrevOnly"
+      }
+    ]
+  },
+  "fixture": "windows/wall-clock-windows",
+  "input": {
+    "tree": "tree",
+    "year": 2026,
+    "zones": [
+      {
+        "footer": "EST5EDT,M3.2.0/2,M11.1.0/2",
+        "name": "Zone/Standard",
+        "note": "美式整小时 DST"
+      },
+      {
+        "footer": "<+1030>-10:30<+11>-11,M10.1.0/2,M4.1.0/2",
+        "name": "Zone/HalfHour",
+        "note": "30 分钟 DST（Lord_Howe 式）；南半球：先回拨再起跳"
+      },
+      {
+        "footer": "<+1245>-12:45<+1345>,M9.5.0/2:45,M4.1.0/3:45",
+        "name": "Zone/QuarterHour",
+        "note": "+12:45 非整点（Chatham 式）"
+      },
+      {
+        "footer": "IST-1GMT0,M10.5.0,M3.5.0/1",
+        "name": "Zone/NegativeDst",
+        "note": "负 DST（Dublin 式）：冬季 offset=0 且 is_dst=True"
+      },
+      {
+        "footer": "MST7",
+        "name": "Zone/NoDst",
+        "note": "无 DST → 零窗口（反例：无窗口 ≠ 没扫描）"
+      },
+      {
+        "footer": "EST5EDT,M3.2.0/2,M11.1.0/2",
+        "name": "Zone/AbbrevOnly",
+        "note": "陷阱：表内额外插入一个'offset 不变、只换缩写'的转换点 → 不得报窗口"
+      }
+    ]
+  },
+  "why": "GAP/OVERLAP 的方向 + 30 分钟 / 45 分钟 / 负 DST 三形态 + 零窗口反例；期望值由段区间包含式独立推导，不调产品代码"
+}
