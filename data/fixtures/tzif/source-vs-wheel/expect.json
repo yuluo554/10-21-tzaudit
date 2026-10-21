@@ -1,0 +1,55 @@
+{
+  "expected": {
+    "overlap_end": 1893456000,
+    "overlap_start": 631152000,
+    "zones": [
+      {
+        "fat_first_year": 1900,
+        "fat_last_year": 2037,
+        "fat_transitions": 236,
+        "zone": "America/New_York"
+      },
+      {
+        "fat_first_year": 1900,
+        "fat_last_year": 2026,
+        "fat_transitions": 168,
+        "zone": "America/Vancouver"
+      },
+      {
+        "fat_first_year": 1880,
+        "fat_last_year": 2037,
+        "fat_transitions": 226,
+        "zone": "Europe/Dublin"
+      },
+      {
+        "fat_first_year": 1895,
+        "fat_last_year": 2037,
+        "fat_transitions": 115,
+        "zone": "Australia/Lord_Howe"
+      },
+      {
+        "fat_first_year": 1868,
+        "fat_last_year": 2037,
+        "fat_transitions": 129,
+        "zone": "Pacific/Chatham"
+      },
+      {
+        "fat_first_year": 1900,
+        "fat_last_year": 2022,
+        "fat_transitions": 69,
+        "zone": "Asia/Tehran"
+      }
+    ]
+  },
+  "fixture": "tzif/source-vs-wheel",
+  "input": {
+    "fat_range": [
+      1900,
+      2037
+    ],
+    "slim_tree": "data/_downloads/slim/2026e",
+    "source": "data/_downloads/tzdata2026e.tar.gz"
+  },
+  "known_deviation": "本机无 zic；fat 树由 gen.py 的规则编译器生成，不是 zic 产物",
+  "why": "同源同版本的 fat（源码规则编译）与 slim（上游 wheel）在重叠区间内语义等价"
+}

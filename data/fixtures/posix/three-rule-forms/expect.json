@@ -1,0 +1,192 @@
+{
+  "expected": {
+    "cases": [
+      {
+        "expected": {
+          "dst_offset_sec": -14400,
+          "end_time_sec": 7200,
+          "start_time_sec": 7200,
+          "std_offset_sec": -18000,
+          "transitions": [
+            {
+              "to_dst": true,
+              "utc": 1772953200
+            },
+            {
+              "to_dst": false,
+              "utc": 1793512800
+            }
+          ]
+        },
+        "name": "west_positive",
+        "note": "PITFALL-WEST：EST5 是 UTC-5",
+        "tz": "EST5EDT,M3.2.0/2,M11.1.0/2",
+        "year": 2026
+      },
+      {
+        "expected": {
+          "dst_offset_sec": -14400,
+          "end_time_sec": 7200,
+          "start_time_sec": 7200,
+          "std_offset_sec": -18000,
+          "transitions": [
+            {
+              "to_dst": true,
+              "utc": 1772953200
+            },
+            {
+              "to_dst": false,
+              "utc": 1793512800
+            }
+          ]
+        },
+        "name": "wall_seconds",
+        "note": "PITFALL-WALLSEC：/2 是墙钟秒 → 07:00Z",
+        "tz": "EST5EDT,M3.2.0/2,M11.1.0/2",
+        "year": 2026
+      },
+      {
+        "expected": {
+          "dst_offset_sec": null,
+          "end_time_sec": null,
+          "start_time_sec": null,
+          "std_offset_sec": -25200,
+          "transitions": []
+        },
+        "name": "no_dst",
+        "note": "无逗号段 = 无 DST（不是'缺省美式 DST'）",
+        "tz": "MST7",
+        "year": 2026
+      },
+      {
+        "expected": {
+          "dst_offset_sec": 49500,
+          "end_time_sec": 13500,
+          "start_time_sec": 9900,
+          "std_offset_sec": 45900,
+          "transitions": [
+            {
+              "to_dst": false,
+              "utc": 1775311200
+            },
+            {
+              "to_dst": true,
+              "utc": 1790431200
+            }
+          ]
+        },
+        "name": "quarter_hour_chatham",
+        "note": "+12:45 非整点；对称反例 = 西为正若写反会得 -45900",
+        "tz": "<+1245>-12:45<+1345>,M9.5.0/2:45,M4.1.0/3:45",
+        "year": 2026
+      },
+      {
+        "expected": {
+          "dst_offset_sec": 0,
+          "end_time_sec": 3600,
+          "start_time_sec": 7200,
+          "std_offset_sec": 3600,
+          "transitions": [
+            {
+              "to_dst": false,
+              "utc": 1774746000
+            },
+            {
+              "to_dst": true,
+              "utc": 1792890000
+            }
+          ]
+        },
+        "name": "negative_dst_dublin",
+        "note": "负 DST：起跳走向**更小**的偏移（爱尔兰式）",
+        "tz": "IST-1GMT0,M10.5.0,M3.5.0/1",
+        "year": 2026
+      },
+      {
+        "expected": {
+          "dst_offset_sec": -7200,
+          "end_time_sec": -3600,
+          "start_time_sec": -7200,
+          "std_offset_sec": -10800,
+          "transitions": [
+            {
+              "to_dst": true,
+              "utc": 1774746000
+            },
+            {
+              "to_dst": false,
+              "utc": 1792890000
+            }
+          ]
+        },
+        "name": "negative_slash_time",
+        "note": "负 /time：可负、可为负整点（南美式）",
+        "tz": "<-03>3<-02>,M3.5.0/-2,M10.5.0/-1",
+        "year": 2026
+      },
+      {
+        "expected": {
+          "dst_offset_sec": -14400,
+          "end_time_sec": 7200,
+          "start_time_sec": 7200,
+          "std_offset_sec": -18000,
+          "transitions": [
+            {
+              "to_dst": true,
+              "utc": 1772953200
+            },
+            {
+              "to_dst": false,
+              "utc": 1793512800
+            }
+          ]
+        },
+        "name": "default_time",
+        "note": "对照组：缺省 /time = 02:00 墙钟",
+        "tz": "EST5EDT,M3.2.0,M11.1.0",
+        "year": 2026
+      }
+    ]
+  },
+  "fixture": "posix/three-rule-forms",
+  "input": {
+    "cases": [
+      {
+        "name": "west_positive",
+        "tz": "EST5EDT,M3.2.0/2,M11.1.0/2",
+        "year": 2026
+      },
+      {
+        "name": "wall_seconds",
+        "tz": "EST5EDT,M3.2.0/2,M11.1.0/2",
+        "year": 2026
+      },
+      {
+        "name": "no_dst",
+        "tz": "MST7",
+        "year": 2026
+      },
+      {
+        "name": "quarter_hour_chatham",
+        "tz": "<+1245>-12:45<+1345>,M9.5.0/2:45,M4.1.0/3:45",
+        "year": 2026
+      },
+      {
+        "name": "negative_dst_dublin",
+        "tz": "IST-1GMT0,M10.5.0,M3.5.0/1",
+        "year": 2026
+      },
+      {
+        "name": "negative_slash_time",
+        "tz": "<-03>3<-02>,M3.5.0/-2,M10.5.0/-1",
+        "year": 2026
+      },
+      {
+        "name": "default_time",
+        "tz": "EST5EDT,M3.2.0,M11.1.0",
+        "year": 2026
+      }
+    ]
+  },
+  "why": "三条技术坑（西为正 / 墙钟秒 / 无 DST 与负 DST）在对称时区上同形，必须存中间量"
+}

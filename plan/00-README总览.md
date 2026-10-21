@@ -81,13 +81,13 @@
 | 承诺项 | 素材来源 | 交付物内可达性 | 核验方式 | 状态 |
 |---|---|---|---|---|
 | TZif 四版本（v1–v4）解析 | IANA 发布包 + PyPI wheel（✅ 已实测可获取） | `tzif.py` → `tzaudit windows --zone` | 本地树全量 zone **零解析错误**；分母以末态回填 | ✅ M1（解析器已落地；五版本 × 598 zone = 2990 次解析零错误，全量与参照实现逐条对拍一致） |
-| slim / fat 两种构建语义等价 | 2026a/2026e 源码包与 wheel（✅） | `timeline.py` 的 `source: table\|tail` | 同版本 slim 与 fat 对同一 zone 语义一致 | ⬜ 待 M2 |
-| 与独立参照实现对拍 | PEP 495 `fold` 语义（✅ 标准） | `timeline.py` 的 `roundtrip` | 对拍一致（数量以末态回填，不写死 20/20） | ⬜ 待 M2 |
-| 本地→UTC 反解（竞品缺失的那一步） | 时间线结构（✅） | `timeline.resolve_local()` | gap / overlap 双向用例各至少一条 | ⬜ 待 M2 |
+| slim / fat 两种构建语义等价 | 2026a/2026e 源码包与 wheel（✅） | `timeline.py` 的 `source: table\|tail` | 同版本 slim 与 fat 对同一 zone 语义一致 | ✅ M2（重叠区间语义等价；两个 fixture：同规则三编码 + 同版本真实数据；实测 6 zone × 350640 小时零差异） |
+| 与独立参照实现对拍 | PEP 495 `fold` 语义（✅ 标准） | `timeline.py` 的 `roundtrip` | 对拍一致（数量以末态回填，不写死 20/20） | ✅ M2（`tests/reference.py` 用 `datetime` + 段区间包含式；全 598 zone 转换点邻域 96680 点 + 抽样 767832 点零不一致；`bench` 侧每版本抽 20 zone） |
+| 本地→UTC 反解（竞品缺失的那一步） | 时间线结构（✅） | `timeline.resolve_local()` | gap / overlap 双向用例各至少一条 | ✅ M2（`test_timeline.py` 的 NY 2026 gap/overlap + 全年逐小时 roundtrip；金标候选数集合 = {0,1,2}） |
 | **GAP 墙钟区间** | 2026 年真实数据（✅ 实测有 gap 的 zone 存在） | `windows` 的 `type=GAP` | America/New_York 2026 `02:00→03:00` | ⬜ 待 M3 |
 | **OVERLAP 墙钟区间** | 同上（✅） | `windows` 的 `type=OVERLAP` | 同 zone `01:00→02:00` | ⬜ 待 M3 |
 | 双判据（防 gap/overlap 互误报） | `data/README.md` §四单点定义 | `windows` 判定函数 | **Vancouver 2026 零误报**（反例单测） | ⬜ 待 M3 |
-| POSIX tail 解析（三类规则 + `/time`） | 2026e 源码包 tail 字符串（✅） | `posix_tz.py` | `Jn` / `n` / `Mm.w.d` 各一条；`/time` 为墙钟秒的断言 | ⬜ 待 M2 |
+| POSIX tail 解析（三类规则 + `/time`） | 2026e 源码包 tail 字符串（✅） | `posix_tz.py` | `Jn` / `n` / `Mm.w.d` 各一条；`/time` 为墙钟秒的断言 | ✅ M2（`test_posix_tz.py` 三类规则 + 负/超 24h `/time`；三条技术坑各一反例；fixture 7 条金标含中间量） |
 | 负 DST / 30 分钟 / 非整点 | Dublin / Lord_Howe / Chatham（✅ 真实 zone） | `windows` + `diff` | 三个 zone 各一条 fixture 金标 | ⬜ 待 M3 |
 | 四类变更互斥分类 | 2026a–2026e（✅） | `diff` 的 `changes[class]` | 判定顺序固定；Vancouver 为 `future_rule` + `evidence=tail` | ⬜ 待 M4 |
 | **历史重解释可被 diff 出来** | IANA `NEWS` 原文 2026e / 2026d（✅） | `diff` 的 `history_reinterpreted` | Dublin(1925) / Tehran(1979) 金标 | ⬜ 待 M4 |
@@ -99,7 +99,7 @@
 | 报告头三字段 | — | `report` 的 `data_version/zones_covered/generated_at` | 缺任一字段即测试失败 | ⬜ 待 M5 |
 | `--fail-on` 门禁语义 | `data/README.md` §四单点定义 | `report` 退出码 | 四组退出码测试（无命中/gap/overlap/history） | ⬜ 待 M5 |
 | 五版本金标可复算 | 2026a–2026e（✅ 实拉） | `bench/run.py` → `data/tzdb/*/expect.json` | 干净环境重跑一致 | ✅ M1（5 版本 × 598 zone 零解析错误；`--check` 退 0） |
-| fixture 可重建 | 生成脚本固定输入 | `data/fixtures/**/gen.py` | `--check` 重生成逐字节一致 | ⬜ 待 M2–M5 |
+| fixture 可重建 | 生成脚本固定输入 | `data/fixtures/**/gen.py` | `--check` 重生成逐字节一致 | 3 组已落地并带 `--check`（`tzif/slim-vs-fat`、`tzif/source-vs-wheel`、`posix/three-rule-forms`）；`windows/diff/audit` 三组待 M3–M5 |
 | 零网络 / 零遥测 | — | 全部子命令 | 断网跑通；代码内无 HTTP 客户端 | ⬜ 待 M6 |
 | README 四场景复现 | — | `README.md` | 干净 clone 按 README 跑通 | ⬜ 待 M6 |
 | 发布三件套 | — | tag / Release 附产物 / `plan/RELEASE-M6.md` | tag 树内含留档；Release 有附件 + 本地副本 + sha256 | ⬜ 待 M6 |
@@ -126,7 +126,7 @@
 |---|---|---|---|
 | M0 | 出题定稿 + 方法论装订 + 可运行骨架 | `plan/00–06` 齐；`AGENTS.md` + `tools/check-sprint-layout.py` + `plan/00` 装订行；布局门 10 组变异 10/10 按预期；`tzaudit --help` / `--version` 退 0；`pytest` 70 项两通道全绿；脱敏门绿 | ✅ 已完成（2026-10-21） |
 | **M1** | **数据先行** | 下载 **2026a–2026e 五个真实版本**（tar.gz 不入仓，只入解包后的必要文本）；`data/tzdb/<ver>/provenance.json` 记录来源 URL + sha256 + 版本号；`bench/run.py --check` 可跑 | ✅ 已完成（2026-10-21） |
-| M2 | **TZif 双引擎** | `tzif.py` + `posix_tz.py` + `timeline.py`；本地树全量 zone 零解析错误；与独立参照实现对拍一致；slim/fat 语义等价；三条技术坑各一反面单测 | ⬜ |
+| M2 | **TZif 双引擎** | `tzif.py` + `posix_tz.py` + `timeline.py`；本地树全量 zone 零解析错误；与独立参照实现对拍一致；slim/fat 语义等价；三条技术坑各一反面单测 | ✅ 已完成（2026-10-21） |
 | M3 | **墙钟窗口表 `windows`** | America/New_York 2026 两窗口方向正确；**Vancouver 2026 零误报**；负 DST / 30 分钟 / 非整点三 zone 金标；`--all --year` 可跑完 | ⬜ |
 | M4 | **版本差异分类 `diff`** | 四类互斥且顺序固定；Vancouver → `future_rule`（`evidence=tail`）；Dublin 1925 / Tehran 1979 → `history_reinterpreted`；2026a↔2026e 名单与金标一致 | ⬜ |
 | M5 | **清单审计 `audit` + 报告门禁** | 四类判定各一条；BC 场景"同一 UTC 两版本两墙钟"复现；报告头三字段；`--fail-on` 四组退出码测试 | ⬜ |

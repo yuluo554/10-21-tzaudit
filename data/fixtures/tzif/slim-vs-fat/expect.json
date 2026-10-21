@@ -1,0 +1,76 @@
+{
+  "expected": {
+    "candidates": [
+      {
+        "local": 1768478400,
+        "utc": [
+          1768496400
+        ]
+      },
+      {
+        "local": 1782907200,
+        "utc": [
+          1782921600
+        ]
+      },
+      {
+        "local": 1772937000,
+        "utc": []
+      },
+      {
+        "local": 1793496600,
+        "utc": [
+          1793511000,
+          1793514600
+        ]
+      },
+      {
+        "local": 1772935199,
+        "utc": [
+          1772953199
+        ]
+      },
+      {
+        "local": 1772938800,
+        "utc": [
+          1772953200
+        ]
+      },
+      {
+        "local": 1793494799,
+        "utc": [
+          1793509199
+        ]
+      },
+      {
+        "local": 1793498400,
+        "utc": [
+          1793516400
+        ]
+      }
+    ]
+  },
+  "fixture": "tzif/slim-vs-fat",
+  "input": {
+    "dst_offset_sec": -14400,
+    "files": [
+      {
+        "name": "fat.tzif",
+        "table_transitions": 132
+      },
+      {
+        "name": "slim.tzif",
+        "table_transitions": 36
+      },
+      {
+        "name": "tail_only.tzif",
+        "table_transitions": 0
+      }
+    ],
+    "footer": "EST5EDT,M3.2.0,M11.1.0",
+    "overlap_end": 2082758400,
+    "overlap_start": 0,
+    "std_offset_sec": -18000
+  },
+  "why": "同一套规则三种编码；重叠区间内 to_local / resolve_local 必须逐点一致"
+}
