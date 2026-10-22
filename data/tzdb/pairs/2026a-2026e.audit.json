@@ -1,0 +1,179 @@
+{
+  "expected": {
+    "audit_errors": 0,
+    "reference_cross_checked": 8,
+    "rows": [
+      {
+        "local": "2026-03-08 02:30:00",
+        "status": "GAP",
+        "utc_candidates": [],
+        "zone": "America/New_York"
+      },
+      {
+        "local": "2026-06-01 12:00:00",
+        "status": "OK",
+        "utc_candidates": [
+          "2026-06-01T16:00:00Z"
+        ],
+        "zone": "America/New_York"
+      },
+      {
+        "local": "2026-11-01 01:30:00",
+        "status": "OVERLAP",
+        "utc_candidates": [
+          "2026-11-01T05:30:00Z",
+          "2026-11-01T06:30:00Z"
+        ],
+        "zone": "America/New_York"
+      },
+      {
+        "local": "2026-06-01 12:00:00",
+        "status": "OK",
+        "utc_candidates": [
+          "2026-06-01T03:00:00Z"
+        ],
+        "zone": "Asia/Tokyo"
+      },
+      {
+        "local": "2026-10-04 02:15:00",
+        "status": "GAP",
+        "utc_candidates": [],
+        "zone": "Australia/Lord_Howe"
+      },
+      {
+        "local": "1925-09-20 02:30:00",
+        "status": "VERSION_CHANGED",
+        "utc_candidates": [
+          "1925-09-20T01:30:00Z"
+        ],
+        "zone": "Europe/Dublin"
+      },
+      {
+        "local": "2026-10-25 01:30:00",
+        "status": "OVERLAP",
+        "utc_candidates": [
+          "2026-10-25T00:30:00Z",
+          "2026-10-25T01:30:00Z"
+        ],
+        "zone": "Europe/Dublin"
+      },
+      {
+        "local": "2026-09-27 03:15:00",
+        "status": "GAP",
+        "utc_candidates": [],
+        "zone": "Pacific/Chatham"
+      }
+    ],
+    "same_utc_two_walls": [
+      {
+        "delta_sec": -3600,
+        "utc": "1925-09-20T02:30:00Z",
+        "wall_new": "1925-09-20 02:30:00",
+        "wall_old": "1925-09-20 03:30:00",
+        "zone": "Europe/Dublin"
+      }
+    ],
+    "single_version": [
+      {
+        "local": "2026-03-08 02:30:00",
+        "status": "GAP",
+        "zone": "America/New_York"
+      },
+      {
+        "local": "2026-06-01 12:00:00",
+        "status": "OK",
+        "zone": "America/New_York"
+      },
+      {
+        "local": "2026-11-01 01:30:00",
+        "status": "OVERLAP",
+        "zone": "America/New_York"
+      },
+      {
+        "local": "2026-06-01 12:00:00",
+        "status": "OK",
+        "zone": "Asia/Tokyo"
+      },
+      {
+        "local": "2026-10-04 02:15:00",
+        "status": "GAP",
+        "zone": "Australia/Lord_Howe"
+      },
+      {
+        "local": "1925-09-20 02:30:00",
+        "status": "OVERLAP",
+        "zone": "Europe/Dublin"
+      },
+      {
+        "local": "2026-10-25 01:30:00",
+        "status": "OVERLAP",
+        "zone": "Europe/Dublin"
+      },
+      {
+        "local": "2026-09-27 03:15:00",
+        "status": "GAP",
+        "zone": "Pacific/Chatham"
+      }
+    ],
+    "statuses": [
+      "GAP",
+      "OK",
+      "OVERLAP",
+      "VERSION_CHANGED"
+    ]
+  },
+  "input": {
+    "new": {
+      "kind": "slim",
+      "pypi_version": "2026.5",
+      "sha256": "b683bd1b6659ddcd810ff02ad09ba821d4bf1065072805063eb35c49617905ac",
+      "tree": "data/_downloads/slim/2026e",
+      "version": "2026e"
+    },
+    "old": {
+      "kind": "slim",
+      "pypi_version": "2026.1",
+      "sha256": "4b1d2be7ac37ceafd7327b961aa3a54e467efbdb563a23655fbfe0d39cfc42a9",
+      "tree": "data/_downloads/slim/2026a",
+      "version": "2026a"
+    },
+    "times": [
+      {
+        "local": "2026-03-08 02:30",
+        "zone": "America/New_York"
+      },
+      {
+        "local": "2026-11-01 01:30",
+        "zone": "America/New_York"
+      },
+      {
+        "local": "2026-06-01 12:00",
+        "zone": "America/New_York"
+      },
+      {
+        "local": "2026-10-04 02:15",
+        "zone": "Australia/Lord_Howe"
+      },
+      {
+        "local": "2026-09-27 03:15",
+        "zone": "Pacific/Chatham"
+      },
+      {
+        "local": "2026-10-25 01:30",
+        "zone": "Europe/Dublin"
+      },
+      {
+        "local": "1925-09-20 02:30",
+        "zone": "Europe/Dublin"
+      },
+      {
+        "local": "2026-06-01 12:00",
+        "zone": "Asia/Tokyo"
+      }
+    ],
+    "times_note": "清单由 bench 常量 AUDIT_TIMES 决定；每类至少一条 + 两版本一致的对照"
+  },
+  "pair": "2026a-2026e",
+  "schema": 1,
+  "suite": "audit"
+}

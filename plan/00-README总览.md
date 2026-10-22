@@ -96,13 +96,13 @@
 | **历史重解释可被 diff 出来** | IANA `NEWS` 原文 2026e / 2026d（✅） | `diff` 的 `history_reinterpreted` | Dublin(1925) / Tehran(1979) 金标 | ✅ M4（真实树实测：Dublin `@1925-09-20`、Tehran `@1979-05-25`、Bogota `@1992-05-02`，`class=history_reinterpreted` + `evidence=table`） |
 | 窗口内变化 zone 清单 | 五个真实版本（✅） | `diff --window` 输出 | 与金标名单一致（名单以末态回填，不写死 11） | ✅ M4（`data/tzdb/pairs/2026a-2026e.json` 的 `window_changed` 15 条 / `all_history_changed` 24 条，**集合相等**断言；条数不写死） |
 | alias 不吸收真实变化 | slim 的 link 集合（✅） | `diff` 的 `alias_only` | "legacy 名字换缩写"用例不得落进 alias_only | ✅ M4（`Zone/LinkB` 旧树是 link、新树改规则 → 落 `future_rule` 不落 alias；`_link_signature` 两侧都算，`LinkA` 的别名集合变空 → `alias_only`） |
-| 清单审计四类判定 | 合成清单（见 `data/README.md` §三） | `audit` 的 `GAP/OVERLAP/VERSION_CHANGED/OK` | 四类各至少一条；`INVALID` 不静默跳过 | ⬜ 待 M5 |
-| **BC 场景：同一 UTC 两版本两墙钟** | Cal.com #30104 原话（✅） | `audit --version A,B` 的对照 | 构造用例复现"相差一小时"的墙钟偏移 | ⬜ 待 M5 |
-| `--daily HH:MM` 与清单等价 | — | `audit` | 两者输出一致 | ⬜ 待 M5 |
-| 报告头三字段 | — | `report` 的 `data_version/zones_covered/generated_at` | 缺任一字段即测试失败 | ⬜ 待 M5 |
-| `--fail-on` 门禁语义 | `data/README.md` §四单点定义 | `report` 退出码 | 四组退出码测试（无命中/gap/overlap/history） | ⬜ 待 M5 |
+| 清单审计四类判定 | 合成清单（见 `data/README.md` §三） | `audit` 的 `GAP/OVERLAP/VERSION_CHANGED/OK` | 四类各至少一条；`INVALID` 不静默跳过 | ✅ M5（`audit.audit_rows` 落地；四类各有真实树锚点 + BC fixture；`INVALID` 进结果 + 计数 + 整体退 4；`STATUS_ORDER` 可被就地变异咬住） |
+| **BC 场景：同一 UTC 两版本两墙钟** | Cal.com #30104 原话（✅） | `audit --version A,B` 的对照 | 构造用例复现"相差一小时"的墙钟偏移 | ✅ M5（fixture `data/fixtures/audit/bc-scenario/` 注入"永久夏令时"立法：`1925-09-20T02:30:00Z` 在 2026a 是 03:30、在 2026e 是 02:30；真实树上 Dublin 1925 同一形态进金标 `same_utc_two_walls`） |
+| `--daily HH:MM` 与清单等价 | — | `audit` | 两者输出一致 | ✅ M5（365 条逐条比对，除 `id` 前缀外全等；缺 `--year` 退 2，不读时钟） |
+| 报告头三字段 | — | `report` 的 `data_version/zones_covered/generated_at` | 缺任一字段即测试失败 | ✅ M5（缺任一 → `ReportIncomplete` 退 3；`generated_at` 由 `cli` 注入，`report` 自己不读时钟——AST 断言 `gmtime` 只出现在 `resolve_generated_at`） |
+| `--fail-on` 门禁语义 | `data/README.md` §四单点定义 | `report` 退出码 | 四组退出码测试（无命中/gap/overlap/history） | ✅ M5（四组各一条；`--json` 与 Markdown 退出码相同；非法枚举退 2；只看结果集不看人读文本） |
 | 五版本金标可复算 | 2026a–2026e（✅ 实拉） | `bench/run.py` → `data/tzdb/*/expect.json` | 干净环境重跑一致 | ✅ M1（5 版本 × 598 zone 零解析错误；`--check` 退 0） |
-| fixture 可重建 | 生成脚本固定输入 | `data/fixtures/**/gen.py` | `--check` 重生成逐字节一致 | 5 组已落地并带 `--check`（`tzif/slim-vs-fat`、`tzif/source-vs-wheel`、`posix/three-rule-forms`、`windows/wall-clock-windows`、**`diff/change-classes`**）；`audit` 一组待 M5 |
+| fixture 可重建 | 生成脚本固定输入 | `data/fixtures/**/gen.py` | `--check` 重生成逐字节一致 | 6 组已落地并带 `--check`（`tzif/slim-vs-fat`、`tzif/source-vs-wheel`、`posix/three-rule-forms`、`windows/wall-clock-windows`、`diff/change-classes`、**`audit/bc-scenario`**） |
 | 零网络 / 零遥测 | — | 全部子命令 | 断网跑通；代码内无 HTTP 客户端 | ⬜ 待 M6 |
 | README 四场景复现 | — | `README.md` | 干净 clone 按 README 跑通 | ⬜ 待 M6 |
 | 发布三件套 | — | tag / Release 附产物 / `plan/RELEASE-M6.md` | tag 树内含留档；Release 有附件 + 本地副本 + sha256 | ⬜ 待 M6 |
@@ -114,9 +114,9 @@
 | 承诺项 | 应存在的文件路径 | 由哪个里程碑产出 | 用哪条命令核对 |
 |---|---|---|---|
 | 可安装 CLI 入口 | `pyproject.toml`（`[project.scripts] tzaudit`）+ `src/tzaudit/cli.py` | M1 | `pip install -e . && tzaudit --help` |
-| 五个子命令实现 | `src/tzaudit/{tzif,posix_tz,timeline,windows,diff,audit,report}.py` | M2–M5 | `tzaudit <sub> --help` × 4（+ `report`） |
-| 五版本金标回归 | `data/tzdb/{2026a..2026e}/expect.json` + `bench/run.py` | M1（拉包）→ M4（金标） | `python bench/run.py --check` |
-| fixture 集 | `data/fixtures/{tzif,posix,windows,diff,audit}/{gen.py,expect.json,README.md}` | M2–M5 | `git ls-files data/fixtures`；生成器 `--check` |
+| 五个子命令实现 | `src/tzaudit/{tzif,posix_tz,timeline,windows,diff,audit,report}.py` | M2–M5 | `tzaudit <sub> --help` × 5（`version` / `windows` / `diff` / `audit` / `report`） |
+| 五版本金标回归 | `data/tzdb/{2026a..2026e}/expect.json` + `data/tzdb/pairs/*.json` + `bench/run.py` | M1（拉包）→ M2/M3/M4/M5（五套件金标） | `python bench/run.py --check`（五套件，退 0） |
+| fixture 集 | `data/fixtures/{tzif,posix,windows,diff,audit}/**/{gen.py,expect.json,README.md}` | M2–M5 | `git ls-files data/fixtures`；生成器 `--check`（6 组） |
 | 测试 | `tests/test_*.py` | M2–M5 | `pytest -q` |
 | README.md | `README.md`（四场景 + 字段说明 + 已知边界） | M6 | 干净 clone 按 README 跑通 |
 | 发布留档 | `plan/RELEASE-M6.md`（两栏：tag 时点 / tag 后追加） | M6 | `git cat-file -e v0.1.0:plan/RELEASE-M6.md` |
@@ -132,7 +132,7 @@
 | M2 | **TZif 双引擎** | `tzif.py` + `posix_tz.py` + `timeline.py`；本地树全量 zone 零解析错误；与独立参照实现对拍一致；slim/fat 语义等价；三条技术坑各一反面单测 | ✅ 已完成（2026-10-21） |
 | M3 | **墙钟窗口表 `windows`** | America/New_York 2026 两窗口方向正确；**Vancouver 2026 零误报**；负 DST / 30 分钟 / 非整点三 zone 金标；`--all --year` 可跑完 | ✅ 已完成（2026-10-21） |
 | M4 | **版本差异分类 `diff`** | 四类互斥且顺序固定；Vancouver → `future_rule`（`evidence=tail`）；Dublin 1925 / Tehran 1979 → `history_reinterpreted`；2026a↔2026e 名单与金标一致 | ✅ 已完成（2026-10-21） |
-| M5 | **清单审计 `audit` + 报告门禁** | 四类判定各一条；BC 场景"同一 UTC 两版本两墙钟"复现；报告头三字段；`--fail-on` 四组退出码测试 | ⬜ |
+| M5 | **清单审计 `audit` + 报告门禁** | 四类判定各一条；BC 场景"同一 UTC 两版本两墙钟"复现；报告头三字段；`--fail-on` 四组退出码测试 | ✅ 已完成（2026-10-22） |
 | M6 | 发布 | **git tag（`v0.1.0`）+ GitHub Release（附产物：手工源码包，本地留副本 + sha256）+ 发布留档 `plan/RELEASE-M6.md`（tag 前落盘、tag 后分栏追加）**；干净环境按 README 跑通四场景；断网跑通；提交面脱敏（含 tag tagger 邮箱）；发布 GitHub **公开仓库** | ⬜ |
 
 > **M6 DoD 口径 = A）"Release 附产物"**：至少 1 个手工上传附件（`git archive` + `gzip -9n` + `SHA256SUMS`），本地留副本并记录 sha256。里程碑表的 DoD 列**只能加不能减**；要减必须在决策记录留一行理由。

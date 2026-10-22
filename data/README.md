@@ -193,12 +193,19 @@
 | `1` | 门禁命中 | `--fail-on` 指定的类别在结果集中出现 |
 | `2` | 用法错误 | 参数缺失/互斥/非法枚举（含传 cron 表达式） |
 | `3` | 环境不满足 | zoneinfo 路径不存在、版本目录缺 `provenance.json`、TZif 损坏 |
-| `4` | 输入数据无效 | 清单 CSV 无法解析的行超过一行（逐行记 `INVALID`，但整体仍按 4 退出） |
-| `5` | **功能未就绪（骨架期临时语义）** | 子命令的解析层尚未实现（M0 骨架期）。**每落地一个子命令即整项退役**：删常量 `errors.EXIT_NOT_READY` → 删 `cli._unimplemented` 对应分支 → 删 `tests/test_exit_codes.py` 对应断言 → 改本节与 `plan/03` §九 → 决策记录留一行。**四处少一处 = 幽灵语义复活。**<br>**进度**：`windows` 已落地并退出该语义（M3，2026-10-21）；`diff` 已落地并退出该语义（M4，2026-10-21）；`audit` / `report` 两条**仍在 5**（M5 退役）。 |
+| `4` | 输入数据无效 | 清单里无法解析的行（逐行记 `INVALID`，但整体仍按 4 退出） |
 
 - `--fail-on` 枚举固定为 `gap`、`overlap`、`history`（可逗号组合）；**不存在第四种**。
 - 退出码只看结果集，不看人读文本；`--json` 与 Markdown 的退出码必须相同。
-- 退出码 `5` **不进入任何发布态口径**：M6 之前必须全部退役，M6 的发布门断言它已从 `src/` 消失。
+- **退出码 `5`（功能未就绪）已于 M5（2026-10-22）整项退役**：五个子命令全部落地后，
+  `errors.EXIT_NOT_READY` 常量、`NotImplementedYet` 类、`cli._unimplemented` 函数一并删除，
+  `src/` 里不再有任何"占位 / 待实现"语义。**这条语义不进任何发布态口径**：
+  M6 的发布门断言 `grep -r EXIT_NOT_READY src/` 为空、且包里没有 `/_unimplemented`。
+  新增子命令也不许把它请回来（`tests/test_exit_codes.py::test_not_ready_semantics_is_gone_from_the_package`
+  逐文件扫描 `src/`）。
+- **`INVALID` 与门禁的优先级**：结果集里有 `INVALID` 行时，`report` 整体退 **4**，
+  优先于 `--fail-on` 命中的 1——结果集不完整时"门禁是否命中"不是可信结论。
+- `audit` 的两条路径退出码一致：`--times` 与 `--daily` 都按"有无 `INVALID`"决定 4 还是 0。
 
 ### 4.5 报告头三字段（M5，缺一即不合规）
 

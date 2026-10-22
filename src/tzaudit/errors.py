@@ -3,6 +3,10 @@
 
 语义权威在 ``data/README.md`` §4.4；本模块只做**常量映射**，不另立第二套语义。
 新增/退役退出码必须同步四处：本模块 → ``cli.py`` → ``tests/test_exit_codes.py`` → 文档。
+
+**退出码 5 已于 M5（2026-10-22）整项退役**：五个子命令全部落地，`src/` 里不再有任何
+"占位 / 待实现"语义（`audit` 与 `report` 落地后，退出码常量、对应异常类与 `cli` 里的
+占位分派同一次提交删净）。`plan/03` §九 与 `data/README.md` §4.4 同步改写。
 """
 
 #: 成功且门禁未命中
@@ -15,8 +19,6 @@ EXIT_USAGE = 2
 EXIT_ENV = 3
 #: 输入数据无效（清单坏行）
 EXIT_INVALID_INPUT = 4
-#: 功能未就绪（骨架期；模块落地后**整项退役**，见 plan/03 §九）
-EXIT_NOT_READY = 5
 
 
 class TzAuditError(Exception):
@@ -47,9 +49,3 @@ class ReportIncomplete(TzAuditError):
     """报告头三字段缺失（``data/README.md`` §4.5）。"""
 
     exit_code = EXIT_ENV
-
-
-class NotImplementedYet(TzAuditError):
-    """骨架期占位：子命令尚未实现。模块落地后必须删除本类及其全部引用。"""
-
-    exit_code = EXIT_NOT_READY

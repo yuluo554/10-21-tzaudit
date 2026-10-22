@@ -1,9 +1,9 @@
 # tzaudit · 时区数据版本漂移审计
 
 > **v0.1.0.dev0** — 本地 CLI，运行时**零网络**、**零第三方依赖**、**零遥测**。
-> 状态：骨架可运行 + **数据先行已落地** + **双引擎已落地** + **墙钟窗口已落地**（五版本真实 provenance、
-> 金标复算入口、TZif 解析器、POSIX tail 解析器、表+tail 合并与本地反解、`windows` 子命令）。
-> `diff` / `audit` / `report` 三个子命令随里程碑落地。
+> 状态：**五个子命令全部落地**（`version` / `windows` / `diff` / `audit` / `report`）。
+> 交付面含五版本真实 provenance、五套件金标复算入口、TZif 解析器、POSIX tail 解析器、
+> 表+tail 合并与本地反解、墙钟窗口、四类版本差异分类、清单审计与报告门禁。
 
 竞品按小时采样 UTC 偏移，只能说"这个时区会错"。我们说三件它做不到的事：
 
@@ -95,8 +95,9 @@ tzaudit version --zoneinfo /usr/share/zoneinfo --json
 
 ## 四个最小复现场景
 
-> `diff` / `audit` / `report` 三个子命令在**当前骨架**下会因解析层未落地而退 5（功能未就绪）。
-> `windows` **已可用**。以下为定稿接口，每条在对应里程碑完成时由 `tests/` 锁定（见 `plan/05` 的 DoD）。
+> 四条场景都已落地，各由 `tests/` 锁定（见 `plan/05` 的 DoD）。
+> 退出码：`0` 成功 / `1` 门禁命中 / `2` 用法错误 / `3` 环境不满足 / `4` 输入无效
+> （口径单点在 `data/README.md` §4.4）。**不再有"功能未就绪（5）"**。
 
 ### 1. 墙钟窗口（GAP / OVERLAP）✅ 已可用
 
@@ -142,27 +143,44 @@ tzaudit diff --old <tree-2026a> --new <tree-2026e> --zone America/Vancouver
 四类互斥但**不穷尽**：窗口把唯一的历史差异排除后，某些 zone 四类都不成立，
 它们进 `summary.unclassified` 如实列出，**不**被塞进 `alias_only` 当垃圾桶。
 
-### 3. 清单审计（不接 cron 表达式）
+### 3. 清单审计（不接 cron 表达式）✅ 已可用
 
 ```bash
-printf 'id,local_time\ncase-001,2026-03-08 02:30\ncase-002,2026-11-01 01:30\n' > times.csv
+printf 'id,local_time\ncase-001,2026-03-08 02:30\ncase-002,2026-11-01 01:30\ncase-003,2026-06-01 12:00\n' > times.csv
 tzaudit audit --times times.csv --zone America/New_York --zoneinfo <tree> --json
 ```
 
-```bash
-tzaudit audit --times times.csv --version <tree-2026a>,<tree-2026e> --zone America/Vancouver
+```text
+case-001  GAP      2026-03-08 02:30:00  —                         0 个 UTC 候选（该墙钟不存在）
+case-002  OVERLAP  2026-11-01 01:30:00  05:30Z, 06:30Z             2 个 UTC 候选（偏移差 3600s）
+case-003  OK       2026-06-01 12:00:00  16:00Z
 ```
 
-`VERSION_CHANGED` = 同一本地时刻在两个版本下 UTC 解释不同（Cal.com BC 事故的复现口径）。
+```bash
+# 同一清单在两棵树下对照：VERSION_CHANGED = 同一本地时刻 UTC 解释不同
+tzaudit audit --times times.csv --zone America/Vancouver \
+    --version <tree-2026a>,<tree-2026e>
 
-### 4. 报告与 CI 门禁
+# 按天展开（等价于一份"每天同一时刻"的清单；缺 --year 退 2，不读时钟）
+tzaudit audit --daily 02:30 --year 2026 --zone America/New_York --zoneinfo <tree>
+```
+
+判定顺序固定 `INVALID → GAP → OVERLAP → VERSION_CHANGED → OK`；行序保持输入序；
+`INVALID` 行不静默跳过（进结果 + 计数 + 整体退 4）。
+
+### 4. 报告与 CI 门禁 ✅ 已可用
+
+先用任一子命令的 `--json` 落一份结果集，再生成报告：
 
 ```bash
+tzaudit windows --all --year 2026 --zoneinfo <tree> --json > result.json
 tzaudit report --from result.json --format md --fail-on gap,overlap,history
+tzaudit report --from result.json --format json --fail-on overlap | jq .report_header
 ```
 
-退出码：`0` 未命中 / `1` 命中 / `2` 用法错误 / `3` 环境不满足 / `4` 输入无效。
-`--fail-on` 只看结果集，不看人读文本。
+报告头**固定三字段**：`data_version` / `zones_covered` / `generated_at`（缺任一退 3）。
+`--fail-on` 只看结果集，不看人读文本；`--json` 与 Markdown 的退出码相同。
+`generated_at` 是唯一的时间戳，可被 `SOURCE_DATE_EPOCH` 冻结以便逐字节比对。
 
 ## 输出字段
 
@@ -220,7 +238,7 @@ py -3.12 tools/check-desensitized.py               # 脱敏门
 | M2 | TZif 双引擎（表 + POSIX tail） | ✅ 已完成（2026-10-21） |
 | M3 | 墙钟窗口 `windows`（含 `--all`） | ✅ 已完成（2026-10-21） |
 | M4 | 版本差异分类 `diff` | ✅ 已完成（2026-10-21） |
-| M5 | 清单审计 `audit` + 报告门禁 | ⬜ |
+| M5 | 清单审计 `audit` + 报告门禁 | ✅ 已完成（2026-10-22） |
 | M6 | 发布：tag + Release + 发布留档 | ⬜ |
 
 ## 许可

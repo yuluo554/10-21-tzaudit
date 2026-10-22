@@ -76,7 +76,7 @@ TIMELINE_TRANSITION_PROBES = 8
 EXPECT_SCHEMA = 1
 
 #: 套件名（``--suite`` 的可选值；缺省 = 全部）
-SUITES = ("parse", "timeline", "windows", "diff")
+SUITES = ("parse", "timeline", "windows", "diff", "audit")
 
 #: diff 套件比较的版本对（**输入常量**，不是观测值）。
 #: 第二对是 `plan/04` §二 已定的 `2026.1-2026.5`，与第一对是同一对标（PyPI 版本号视角）。
@@ -94,6 +94,34 @@ DIFF_MIN_CROSS_CHECK = 2
 #: diff 对拍时把参照时间线展开到的年份（**输入常量**）。
 #: 必须覆盖到"表外"足够远——真实对上表尾最晚到 2087（2026a 的 Casablanca）。
 DIFF_FUTURE_SENTINEL_YEAR = 2200
+
+#: audit 套件的**清单**（输入常量，不是观测值）：``(zone, 本地墙钟)``。
+#:
+#: 选点纪律：每一类都必须**至少一条**，且必须含一条"两版本一致"的对照
+#: （否则"实现把所有行都报成 VERSION_CHANGED"也能全绿）。
+#:
+#: - `America/New_York` 2026-03-08 02:30 → GAP（起跳跳掉的那一小时）
+#: - `America/New_York` 2026-11-01 01:30 → OVERLAP（回拨重复的那一小时）
+#: - `America/New_York` 2026-06-01 12:00 → OK
+#: - `Australia/Lord_Howe` 2026-10-04 02:15 → GAP（30 分钟窗口）
+#: - `Pacific/Chatham` 2026-09-27 03:15 → GAP（+12:45 非整点）
+#: - `Europe/Dublin` 2026-10-25 01:30 → OVERLAP（负 DST）
+#: - `Europe/Dublin` 1925-09-20 02:30 → **VERSION_CHANGED**（真实历史重解释：
+#:   2026e 把 1925 年的转换重写成夏令时回拨，2026a 没有 → 同一墙钟两版本候选不同）
+#: - `Asia/Tokyo` 2026-06-01 12:00 → OK（无 DST，两版本必然一致）
+AUDIT_TIMES = (
+    ("America/New_York", "2026-03-08 02:30"),
+    ("America/New_York", "2026-11-01 01:30"),
+    ("America/New_York", "2026-06-01 12:00"),
+    ("Australia/Lord_Howe", "2026-10-04 02:15"),
+    ("Pacific/Chatham", "2026-09-27 03:15"),
+    ("Europe/Dublin", "2026-10-25 01:30"),
+    ("Europe/Dublin", "1925-09-20 02:30"),
+    ("Asia/Tokyo", "2026-06-01 12:00"),
+)
+
+#: audit 套件比较的版本对（**输入常量**）。单版本那一列用 ``AUDIT_PAIRS[i][1]``。
+AUDIT_PAIRS = (("2026a", "2026e"),)
 
 #: windows 套件扫描的年份（**输入常量**，不是观测值）
 WINDOWS_YEARS = (2024, 2026)
@@ -791,6 +819,181 @@ def _reference_classify_diff(ref_a, ref_b):
     return "future_rule"  # 表内无差异、仅 tail 结构不同（参照层看不到 → 交给生产）
 
 
+# ---------------------------------------------------------------- audit 套件
+
+
+def audit_stats(trees, pair):
+    """清单审计层的**只由输入决定**的统计量。
+
+    ``stats`` 里只放"输入 + 期望"，不含任何观测/耗时字段：
+
+    - ``old_version`` / ``new_version``：两棵树。
+    - ``audit_errors``：建时间线 / 判定时的异常数（必须 0）。
+    - ``rows``：每条 ``{zone, local, status, utc_candidates}`` —— **两版本模式**下的判定
+      （``--version A,B``；A 为主树，候选以 A 为准）。
+    - ``single_version``：同一批行在**单树模式**（只用 B）下的 status
+      （``VERSION_CHANGED`` 在单树模式不可能出现，这条对照能抓住"永远报 version_changed"的退化实现）。
+    - ``statuses``：两版本模式下出现过的 status 集合（判据不得退化：至少三类）。
+    - ``same_utc_two_walls``：**BC 场景的对账** —— 每条行在两树下的墙钟偏移差（秒）；
+      非 0 的才记，用来钉住"同一本地时刻两版本不同解释"这件事。
+    """
+    from tzaudit import audit, civil
+    from tzaudit.zoneinfo_store import ZoneinfoStore, byte_key
+
+    old_ver, new_ver = pair
+    old_store = ZoneinfoStore(trees[old_ver])
+    new_store = ZoneinfoStore(trees[new_ver])
+
+    errors = []
+    rows = []
+    single = []
+    wall_pairs = []
+    for zone, local in AUDIT_TIMES:
+        parsed = audit.parse_times("%s,%s\n" % (_audit_row_id(zone, local), local))
+        try:
+            both = audit.audit_rows(parsed, zone, versions=[old_store, new_store])
+            one = audit.audit_rows(parsed, zone, versions=[new_store])
+            walls = _same_utc_two_walls(zone, local, old_store, new_store)
+        except Exception as exc:  # 任何失败都进 errors（不吞）
+            errors.append("%s %s: %s: %s" % (zone, local, type(exc).__name__, exc))
+            continue
+        row = both.rows[0]
+        rows.append({
+            "zone": zone,
+            "local": row.local,
+            "status": row.status,
+            "utc_candidates": [civil.format_utc(utc) for utc in row.utc_candidates],
+        })
+        single.append({"zone": zone, "local": one.rows[0].local,
+                       "status": one.rows[0].status})
+        wall_pairs.extend(walls)
+
+    rows.sort(key=lambda item: (byte_key(item["zone"]), item["local"]))
+    single.sort(key=lambda item: (byte_key(item["zone"]), item["local"]))
+    wall_pairs.sort(key=lambda item: (byte_key(item["zone"]), item["utc"]))
+
+    stats = {
+        "old_version": old_ver,
+        "new_version": new_ver,
+        "audit_errors": len(errors),
+        "rows": rows,
+        "single_version": single,
+        "statuses": sorted(set(item["status"] for item in rows)),
+        "same_utc_two_walls": wall_pairs,
+    }
+    return stats, errors
+
+
+def _audit_row_id(zone, local):
+    """清单行的 id（**只由输入决定**：zone 名 + 本地时刻）。"""
+    return "%s@%s" % (zone.replace("/", "_"), local.replace(" ", "T"))
+
+
+def _same_utc_two_walls(zone, local, old_store, new_store):
+    """**同一 UTC 时刻在两版本下的两个墙钟**（Cal.com 场景的对账口径，`plan/01` 招牌动词）。
+
+    候选 UTC 集合由**参照实现**独立给出（两侧并集），再在两棵树下各算一次
+    ``to_local``；偏移差非 0 的才记。这样"同一 UTC → 两个墙钟"这件事由**输入**决定，
+    与产品实现的判定路径无关。
+
+    参照实现不可用时返回空列表（对拍在 :func:`cross_check_audit` 里另有硬门槛）。
+    """
+    if os.path.join(ROOT, "tests") not in sys.path:
+        sys.path.insert(0, os.path.join(ROOT, "tests"))
+    try:
+        import reference
+    except ImportError:
+        return []
+
+    from tzaudit import civil
+
+    wall = civil.parse_local(local)
+    old_ref = reference.read_timeline(old_store.read_zone(zone))
+    new_ref = reference.read_timeline(new_store.read_zone(zone))
+    stamps = sorted(set(item[0] for item in old_ref.resolve_local(wall))
+                    | set(item[0] for item in new_ref.resolve_local(wall)))
+
+    out = []
+    for utc in stamps:
+        wall_old = old_ref.to_local(utc)
+        wall_new = new_ref.to_local(utc)
+        if wall_old == wall_new:
+            continue
+        out.append({
+            "zone": zone,
+            "utc": civil.format_utc(utc),
+            "wall_old": civil.format_local(wall_old),
+            "wall_new": civil.format_local(wall_new),
+            "delta_sec": wall_new - wall_old,
+        })
+    return out
+
+
+def cross_check_audit(trees, pair):
+    """audit 层与 ``tests/reference.py`` 对拍 → ``(checked, mismatches)``。
+
+    参照实现**独立**读 TZif、**独立**解析 POSIX、用**区间包含式**求候选；
+    这里对 ``AUDIT_TIMES`` 的每一条逐项比对"候选 UTC 列表"与"由候选数推出的状态"。
+
+    极性纪律（M4 教训）：对拍的抽样范围必须覆盖**该判据会失效的地方**——
+    所以我们特意把 GAP / OVERLAP 那一小时写进 ``AUDIT_TIMES``（起跳点、回拨点四周），
+    而不是抽一堆"随便一个正午"（那样"永远返回 OK"的实现也能过）。
+    """
+    if os.path.join(ROOT, "tests") not in sys.path:
+        sys.path.insert(0, os.path.join(ROOT, "tests"))
+    try:
+        import reference
+    except ImportError as exc:
+        return 0, ["参照实现不可用: %s" % exc]
+
+    from tzaudit import audit, civil
+    from tzaudit.zoneinfo_store import ZoneinfoStore
+
+    old_ver, new_ver = pair
+    old_store = ZoneinfoStore(trees[old_ver])
+    new_store = ZoneinfoStore(trees[new_ver])
+
+    checked = 0
+    mismatches = []
+    for zone, local in AUDIT_TIMES:
+        try:
+            parsed = audit.parse_times("%s,%s\n" % (_audit_row_id(zone, local), local))
+            ours = audit.audit_rows(parsed, zone, versions=[old_store, new_store]).rows[0]
+            old_ref = reference.read_timeline(old_store.read_zone(zone))
+            new_ref = reference.read_timeline(new_store.read_zone(zone))
+        except Exception as exc:
+            mismatches.append("%s %s: 对拍异常 %s: %s"
+                              % (zone, local, type(exc).__name__, exc))
+            continue
+
+        wall = civil.parse_local(local)
+        old_hits = [item[0] for item in old_ref.resolve_local(wall)]
+        new_hits = [item[0] for item in new_ref.resolve_local(wall)]
+        want_status = _reference_audit_status(old_hits, new_hits)
+        if ours.status != want_status:
+            mismatches.append("%s %s: status %r != 参照 %r（旧 %r / 新 %r）"
+                              % (zone, local, ours.status, want_status, old_hits, new_hits))
+        if list(ours.utc_candidates) != old_hits:
+            mismatches.append("%s %s: 候选 %r != 参照 %r"
+                              % (zone, local, list(ours.utc_candidates), old_hits))
+        checked += 1
+
+    if checked < len(AUDIT_TIMES):
+        mismatches.append("audit 对拍条数不足：%d < %d" % (checked, len(AUDIT_TIMES)))
+    return checked, mismatches
+
+
+def _reference_audit_status(old_hits, new_hits):
+    """参照实现独立推出的状态（判定顺序与 ``audit.STATUS_ORDER`` 同口径）。"""
+    if not old_hits:
+        return "GAP"
+    if len(old_hits) >= 2:
+        return "OVERLAP"
+    if set(old_hits) != set(new_hits):
+        return "VERSION_CHANGED"
+    return "OK"
+
+
 # ---------------------------------------------------------------- regen / check
 
 
@@ -936,6 +1139,48 @@ def _diff_doc(pair, trees, stats, cross_checked):
     }
 
 
+def _audit_doc(pair, trees, stats, cross_checked):
+    """audit 套件的金标（**只存输入 + 期望**，不存观测）。
+
+    文件名同样带版本对：``data/tzdb/pairs/<old>-<new>.audit.json``
+    （与 diff 金标同目录、不同后缀，避免两份不同套件的期望互相覆盖）。
+    """
+    old_ver, new_ver = pair
+    prov_old = _provenance(trees[old_ver])
+    prov_new = _provenance(trees[new_ver])
+    return {
+        "schema": EXPECT_SCHEMA,
+        "suite": "audit",
+        "pair": "%s-%s" % (old_ver, new_ver),
+        "input": {
+            "old": {
+                "version": old_ver,
+                "kind": prov_old.get("kind"),
+                "pypi_version": prov_old.get("pypi_version"),
+                "sha256": prov_old.get("sha256"),
+                "tree": "data/_downloads/slim/%s" % old_ver,
+            },
+            "new": {
+                "version": new_ver,
+                "kind": prov_new.get("kind"),
+                "pypi_version": prov_new.get("pypi_version"),
+                "sha256": prov_new.get("sha256"),
+                "tree": "data/_downloads/slim/%s" % new_ver,
+            },
+            "times": [{"zone": zone, "local": local} for zone, local in AUDIT_TIMES],
+            "times_note": "清单由 bench 常量 AUDIT_TIMES 决定；每类至少一条 + 两版本一致的对照",
+        },
+        "expected": {
+            "audit_errors": stats["audit_errors"],
+            "rows": stats["rows"],
+            "single_version": stats["single_version"],
+            "statuses": stats["statuses"],
+            "same_utc_two_walls": stats["same_utc_two_walls"],
+            "reference_cross_checked": cross_checked,
+        },
+    }
+
+
 def _write_expect(version, doc):
     return _write_doc(os.path.join(TZDB_DIR, version), "expect.json", doc)
 
@@ -951,6 +1196,11 @@ def _write_windows_expect(version, doc):
 def _write_diff_expect(pair_name, doc):
     """diff 金标落在 ``data/tzdb/pairs/<old>-<new>.json``（文件名带版本对）。"""
     return _write_doc(os.path.join(TZDB_DIR, "pairs"), "%s.json" % pair_name, doc)
+
+
+def _write_audit_expect(pair_name, doc):
+    """audit 金标落在 ``data/tzdb/pairs/<old>-<new>.audit.json``（同目录、不同后缀）。"""
+    return _write_doc(os.path.join(TZDB_DIR, "pairs"), "%s.audit.json" % pair_name, doc)
 
 
 def regen(trees, suites=SUITES):
@@ -1073,6 +1323,43 @@ def regen(trees, suites=SUITES):
                   % (pair_name, os.path.relpath(path, ROOT), stats["zones_compared"],
                      len(stats["changes"]), len(stats["window_changed"]), checked))
 
+    if "audit" in suites:
+        for pair in AUDIT_PAIRS:
+            old_ver, new_ver = pair
+            missing = [v for v in pair if v not in trees]
+            if missing:
+                problems.append("%s-%s: audit 缺本地树 %s"
+                                % (old_ver, new_ver, ", ".join(missing)))
+                continue
+            stats, errors = audit_stats(trees, pair)
+            if errors:
+                problems.append("%s-%s: %d 处 audit 错误（例: %s）"
+                                % (old_ver, new_ver, len(errors), errors[0]))
+                continue
+            # 判据不得退化：至少三类 status（四类各有锚点；只有 OK 等于没验）
+            if len(stats["statuses"]) < 3:
+                problems.append("%s-%s: audit 只产出 %r —— 清单判据可能退化"
+                                % (old_ver, new_ver, stats["statuses"]))
+                continue
+            # 单树模式不得出现 VERSION_CHANGED（那条语义要求两棵树）
+            leaked = [item for item in stats["single_version"]
+                      if item["status"] == "VERSION_CHANGED"]
+            if leaked:
+                problems.append("%s-%s: 单树模式出现 VERSION_CHANGED（%d 条）"
+                                % (old_ver, new_ver, len(leaked)))
+                continue
+            checked, mismatches = cross_check_audit(trees, pair)
+            if mismatches:
+                for item in mismatches:
+                    problems.append("%s-%s: %s" % (old_ver, new_ver, item))
+                continue
+            pair_name = "%s-%s" % (old_ver, new_ver)
+            path = _write_audit_expect(pair_name, _audit_doc(pair, trees, stats, checked))
+            written += 1
+            print("  %s audit   → %s  行=%d  状态=%s  对拍=%d"
+                  % (pair_name, os.path.relpath(path, ROOT), len(stats["rows"]),
+                     "/".join(stats["statuses"]), checked))
+
     print("=" * 56)
     if problems:
         print("结论: FAIL（%d 处），未写任何不干净的金标" % len(problems))
@@ -1097,6 +1384,18 @@ def _load_doc(version, filename):
 def _load_pair_doc(pair_name):
     """读 ``data/tzdb/pairs/<old>-<new>.json``。"""
     path = os.path.join(TZDB_DIR, "pairs", "%s.json" % pair_name)
+    if not os.path.isfile(path):
+        return None
+    try:
+        with io.open(path, "r", encoding="utf-8") as fh:
+            return json.load(fh)
+    except ValueError:
+        return "BROKEN"
+
+
+def _load_audit_doc(pair_name):
+    """读 ``data/tzdb/pairs/<old>-<new>.audit.json``。"""
+    path = os.path.join(TZDB_DIR, "pairs", "%s.audit.json" % pair_name)
     if not os.path.isfile(path):
         return None
     try:
@@ -1279,6 +1578,88 @@ def _check_diff(trees, pair, bad):
              len(stats["window_changed"]), checked))
 
 
+def _check_audit(trees, pair, bad):
+    """audit 套件的复算与比对（逐行 ``status`` + 候选 UTC，**逐条相等**）。
+
+    三条判据（与 diff 套件同构）：
+
+    1. 逐行对账：``status`` 与候选 UTC 必须与金标**逐条相等**（清单行的顺序也在内）。
+    2. **单树模式对照**：同一批行在只用新树的模式下不得出现 ``VERSION_CHANGED``
+       —— 那条语义要求两棵树（``plan/03`` §七）。这是"永远报 VERSION_CHANGED"的闸。
+    3. 判据不得退化：``statuses`` 至少三类（只有 OK 等于清单审计没验）。
+    """
+    old_ver, new_ver = pair
+    pair_name = "%s-%s" % (old_ver, new_ver)
+    stats, errors = audit_stats(trees, pair)
+
+    expect = _load_audit_doc(pair_name)
+    if expect is None:
+        bad.append("%s: 缺 pairs/%s.audit.json（跑 --regen --suite audit）"
+                   % (pair_name, pair_name))
+        return
+    if expect == "BROKEN":
+        bad.append("%s: pairs/%s.audit.json 不是合法 JSON" % (pair_name, pair_name))
+        return
+
+    if stats["audit_errors"] != 0:
+        bad.append("%s: audit_errors=%d（必须 0）；例: %s"
+                   % (pair_name, stats["audit_errors"], errors[0] if errors else "-"))
+    if not stats["rows"]:
+        bad.append("%s: audit 清单为空（判据空跑）" % pair_name)
+
+    expected = expect.get("expected") or {}
+
+    # 1) 逐行对账（status + 候选 UTC；顺序也必须在内）
+    want_rows = [(item["zone"], item["local"], item["status"],
+                  tuple(item["utc_candidates"])) for item in (expected.get("rows") or [])]
+    got_rows = [(item["zone"], item["local"], item["status"],
+                 tuple(item["utc_candidates"])) for item in stats["rows"]]
+    if want_rows != got_rows:
+        want_set, got_set = set(want_rows), set(got_rows)
+        bad.append("%s: audit.rows 不相等（多出 %r / 缺少 %r）"
+                   % (pair_name, sorted(got_set - want_set), sorted(want_set - got_set)))
+
+    # 2) 单树模式对照
+    want_single = [(item["zone"], item["local"], item["status"])
+                   for item in (expected.get("single_version") or [])]
+    got_single = [(item["zone"], item["local"], item["status"])
+                  for item in stats["single_version"]]
+    if want_single != got_single:
+        bad.append("%s: audit.single_version 漂移（期望 %r 实测 %r）"
+                   % (pair_name, want_single, got_single))
+    leaked = [item for item in stats["single_version"]
+              if item["status"] == "VERSION_CHANGED"]
+    if leaked:
+        bad.append("%s: 单树模式出现 VERSION_CHANGED（%d 条）—— 该状态要求两棵树"
+                   % (pair_name, len(leaked)))
+
+    # 3) 判据不得退化
+    if len(stats["statuses"]) < 3:
+        bad.append("%s: audit 只产出 %r —— 清单判据可能退化"
+                   % (pair_name, stats["statuses"]))
+
+    # 4) "同一 UTC 两版本两墙钟"的对账（Cal.com 场景的招牌输出）
+    want_walls = [(item["zone"], item["utc"], item["wall_old"], item["wall_new"],
+                   item["delta_sec"]) for item in (expected.get("same_utc_two_walls") or [])]
+    got_walls = [(item["zone"], item["utc"], item["wall_old"], item["wall_new"],
+                  item["delta_sec"]) for item in stats["same_utc_two_walls"]]
+    if want_walls != got_walls:
+        bad.append("%s: audit.same_utc_two_walls 漂移（期望 %r 实测 %r）"
+                   % (pair_name, want_walls, got_walls))
+    for item in stats["same_utc_two_walls"]:
+        if item["delta_sec"] == 0:
+            bad.append("%s: same_utc_two_walls 出现 delta=0 的条目（%r）"
+                       % (pair_name, item))
+
+    # 5) 独立参照对拍
+    checked, mismatches = cross_check_audit(trees, pair)
+    if mismatches:
+        bad.extend("%s: %s" % (pair_name, item) for item in mismatches)
+
+    print("  %-13s audit 行=%-3d 状态=%-40s 对拍=%d"
+          % (pair_name, len(stats["rows"]), "/".join(stats["statuses"]), checked))
+
+
 def check(trees, suites=SUITES):
     """复算并与入仓金标比对。分母 > 0 是硬门槛。"""
     versions = _tzdb_versions()
@@ -1331,6 +1712,16 @@ def check(trees, suites=SUITES):
                 continue
             _check_diff(trees, pair, bad)
 
+    if "audit" in suites:
+        denominator += len(AUDIT_PAIRS)
+        for pair in AUDIT_PAIRS:
+            missing = [v for v in pair if v not in trees]
+            if missing:
+                bad.append("%s-%s: audit 缺本地树 %s（跑 tools/fetch_tzdb.py）"
+                           % (pair[0], pair[1], ", ".join(missing)))
+                continue
+            _check_audit(trees, pair, bad)
+
     print("=" * 56)
     print("复算项数: %d（分母必须 > 0）" % denominator)
     print("不一致: %d" % len(bad))
@@ -1349,8 +1740,10 @@ def check(trees, suites=SUITES):
         print("结论: %d 份 timeline 金标复算一致" % denominator)
     elif "windows" in suites:
         print("结论: %d 份 windows 金标复算一致" % denominator)
-    else:
+    elif "diff" in suites:
         print("结论: %d 份 diff 金标复算一致" % len(DIFF_PAIRS))
+    else:
+        print("结论: %d 份 audit 金标复算一致" % len(AUDIT_PAIRS))
     return EXIT_OK
 
 

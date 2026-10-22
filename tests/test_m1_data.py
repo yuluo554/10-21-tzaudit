@@ -547,21 +547,35 @@ def test_bench_check_passes_with_real_trees():
     rc, out = _run_bench(["--check"])
     assert rc == 0, out
     assert "parse_errors=0" in out
-    # 分母 = 五版本 × 各套件 + `DIFF_PAIRS` 的对数（M4 加 diff 套件后从 5 变 6）。
-    # 这里断言"分母与套件清单自洽"，而**不写死**具体数字——M5 再加套件时不必改这条。
-    expected = 5 + len(_diff_pairs())
+    # 分母 = 五个版本目录（parse/timeline/windows 各一份）+ 每个"按版本对"套件的对数。
+    # M4 加 diff、M5 加 audit，各贡献 len(PAIRS) 项。
+    # 断言"分母与套件清单自洽"，而**不写死**魔法数——再加套件时只需在
+    # `_pair_counts()` 里登记一行。
+    expected = 5 + sum(_pair_counts().values())
     assert "复算项数: %d" % expected in out, out
 
 
-def _diff_pairs():
-    """从 `bench/run.py` 读 `DIFF_PAIRS`（不 import，避免它 `sys.path` 副作用）。"""
+def _bench_constant(name):
+    """从 `bench/run.py` 读一个模块级常量（不 import，避免它 `sys.path` 副作用）。"""
     path = os.path.join(ROOT, "bench", "run.py")
     with io.open(path, "r", encoding="utf-8") as fh:
         tree = ast.parse(fh.read(), filename=path)
     for node in tree.body:
-        if isinstance(node, ast.Assign) and getattr(node.targets[0], "id", "") == "DIFF_PAIRS":
+        if isinstance(node, ast.Assign) and getattr(node.targets[0], "id", "") == name:
             return ast.literal_eval(node.value)
-    raise AssertionError("bench/run.py 里找不到 DIFF_PAIRS")
+    raise AssertionError("bench/run.py 里找不到 %s" % name)
+
+
+def _pair_counts():
+    """`{套件名: 版本对数}` —— 凡是"按版本对"出金标的套件都要在这里登记。
+
+    M4 的 `diff` 与 M5 的 `audit` 都是按版本对产出的（`pairs/<old>-<new>*.json`）。
+    漏登记会让这条断言与 bench 的分母脱节（假绿）。
+    """
+    return {
+        "diff": len(_bench_constant("DIFF_PAIRS")),
+        "audit": len(_bench_constant("AUDIT_PAIRS")),
+    }
 
 
 @needs_trees

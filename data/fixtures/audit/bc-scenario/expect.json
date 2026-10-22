@@ -1,0 +1,94 @@
+{
+  "expected": {
+    "rows": [
+      {
+        "id": "bc-ok-summer",
+        "status": "OK",
+        "utc_candidates": [
+          1784142000
+        ],
+        "versions": {
+          "2026a": [
+            1784142000
+          ],
+          "2026b": [
+            1784142000
+          ]
+        },
+        "why": "2026-07 两树都在夏令时 −7 → 12:00 都是 19:00Z"
+      },
+      {
+        "id": "bc-version-changed",
+        "status": "VERSION_CHANGED",
+        "utc_candidates": [
+          1797364800
+        ],
+        "versions": {
+          "2026a": [
+            1797364800
+          ],
+          "2026b": [
+            1797361200
+          ]
+        },
+        "why": "2026-12 旧树已回拨到 −8 → 20:00Z；新树仍 −7 → 19:00Z（相差一小时）"
+      },
+      {
+        "id": "bc-gap",
+        "status": "GAP",
+        "utc_candidates": [],
+        "versions": {
+          "2026a": [],
+          "2026b": [
+            1772962200
+          ]
+        },
+        "why": "2026-03-08 02:30 只在旧树不存在（起跳）；新树无起跳 → 按顺序必须报 GAP，不得被 VERSION_CHANGED 抢先"
+      },
+      {
+        "id": "bc-overlap",
+        "status": "OVERLAP",
+        "utc_candidates": [
+          1793521800,
+          1793525400
+        ],
+        "versions": {
+          "2026a": [
+            1793521800,
+            1793525400
+          ],
+          "2026b": [
+            1793521800
+          ]
+        },
+        "why": "2026-11-01 01:30 在旧树出现两次（−7 与 −8）；新树只有一次 → 按顺序必须报 OVERLAP"
+      }
+    ],
+    "status_order": [
+      "INVALID",
+      "GAP",
+      "OVERLAP",
+      "VERSION_CHANGED",
+      "OK"
+    ]
+  },
+  "fixture": "audit/bc-scenario",
+  "input": {
+    "injected": {
+      "new": "历史到 2025-03 最后一次起跳为止 + tail MST7（表尾 PDT −7，自洽）",
+      "old": "完整季节历史 + tail PST8PDT,M3.2.0,M11.1.0（表尾 PST −8，与 tail std 一致）",
+      "same_utc_two_wall_clocks": "19:00Z 在 2026a 下是 11:00 墙钟（PST −8），在 2026b 下是 12:00 墙钟（−7）"
+    },
+    "times": "times.txt",
+    "trees": {
+      "A": "old",
+      "B": "new"
+    },
+    "versions": {
+      "A": "2026a",
+      "B": "2026b"
+    },
+    "zone": "Zone/Bc"
+  },
+  "why": "同一本地墙钟在两版本下映射到不同 UTC（BC 永久夏令时立法）；同时用两条行锚住判定顺序（旧树 GAP / OVERLAP 必须先于 VERSION_CHANGED）。期望值由注入的偏移常量手写，不调产品代码"
+}

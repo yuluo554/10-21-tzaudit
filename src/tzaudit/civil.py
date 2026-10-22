@@ -94,6 +94,17 @@ def format_local(epoch):
     return "%s-%02d-%02d %02d:%02d:%02d" % (year, m, d, hh, mm, ss)
 
 
+def format_utc(epoch):
+    """UTC epoch → ``YYYY-MM-DDTHH:MM:SSZ``（``audit --json`` 的候选时刻用这个形态）。
+
+    与 :func:`format_local` 的差别只在分隔符与 ``Z`` 后缀：本函数**不**代表任何时区的
+    墙钟，它就是把 epoch 当 UTC 读数写出来（纯日历拆分，不做偏移加减）。
+    """
+    y, m, d, hh, mm, ss = local_naive_from_epoch(epoch)
+    year = ("%04d" % y) if y >= 0 else ("-%04d" % (-y))
+    return "%s-%02d-%02dT%02d:%02d:%02dZ" % (year, m, d, hh, mm, ss)
+
+
 def format_offset(offset_sec):
     """偏移秒 → ``+HH:MM[:SS]``（东为正；输出层用，与 POSIX 的西为正相反）。"""
     sign = "+" if offset_sec >= 0 else "-"
