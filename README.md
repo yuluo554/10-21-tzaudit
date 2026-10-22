@@ -174,13 +174,30 @@ tzaudit audit --daily 02:30 --year 2026 --zone America/New_York --zoneinfo <tree
 
 ```bash
 tzaudit windows --all --year 2026 --zoneinfo <tree> --json > result.json
-tzaudit report --from result.json --format md --fail-on gap,overlap,history
-tzaudit report --from result.json --format json --fail-on overlap | jq .report_header
+tzaudit report --from result.json --zoneinfo <tree> --format md --fail-on gap,overlap,history
+tzaudit report --from result.json --format json --zoneinfo <tree> --fail-on overlap
 ```
 
-报告头**固定三字段**：`data_version` / `zones_covered` / `generated_at`（缺任一退 3）。
-`--fail-on` 只看结果集，不看人读文本；`--json` 与 Markdown 的退出码相同。
+报告头**固定三字段**：
+
+```text
+# tzaudit 报告
+
+- data_version: 2026e
+- zones_covered: 598
+- generated_at: 2026-10-22T10:09:35Z
+```
+
+`data_version` / `zones_covered` 的**输入侧来源**是 `--zoneinfo <tree>`（单树）或
+`--version <A>,<B>`（两树）；结果集里自带 `data_version` 时也可以不传。
+缺任一字段 → 退 3。`--fail-on` 只看结果集，不看人读文本；`--json` 与 Markdown 的退出码相同。
 `generated_at` 是唯一的时间戳，可被 `SOURCE_DATE_EPOCH` 冻结以便逐字节比对。
+
+```bash
+# 清单审计的结果集可以直接进报告（`audit --json` 自带 versions，无需再传 --version）
+tzaudit audit --times times.csv --zone America/New_York --zoneinfo <tree> --json > result.json
+tzaudit report --from result.json --format md --fail-on overlap
+```
 
 ## 输出字段
 

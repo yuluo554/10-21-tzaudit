@@ -28,11 +28,11 @@
 | 9 | `--fail-on` 三值枚举，四组退出码测试 | `test_gate_exit_0_when_nothing_hits` / `..._1_on_gap` / `..._1_on_overlap` / `..._1_on_history`；`test_parse_fail_on_rejects_unknown` |
 | 10 | `--json` 与 Markdown 退出码相同 | `test_cli_report_json_and_markdown_exit_codes_match` |
 | 11 | `data/fixtures/audit/bc-scenario/` 落地，`gen.py --check` 逐字节一致 | `bc-scenario: PASS（6 份产物逐字节一致）`；两层断言（`_self_check` 形态 + 重生成比对） |
-| 12 | `tests/test_audit.py` + `tests/test_report.py` 落地 | 31 + 45 项全绿 |
+| 12 | `tests/test_audit.py` + `tests/test_report.py` 落地 | 31 + 50 项全绿 |
 | 13 | **`EXIT_NOT_READY` 整项退役** | `errors.EXIT_NOT_READY` / `errors.NotImplementedYet` / `cli._unimplemented` **全部删除**；`test_not_ready_semantics_is_gone_from_the_package` 三处一起断言 + 逐文件扫 `src/` |
 | 14 | 新增两条"防复活"断言 | `test_audit_is_no_longer_not_ready` / `test_report_is_no_longer_not_ready` |
-| 15 | `py -3.12 -m pytest` 全绿 | **429 passed, 1 skipped**（430 项收集；1740.58 s ≈ 29 分） |
-| 16 | `py -3.8 -m pytest` 全绿 | **429 passed, 1 skipped**（2293.84 s ≈ 38 分 13 秒）；与 3.12 通道同数 |
+| 15 | `py -3.12 -m pytest` 全绿 | **434 passed, 1 skipped**（435 项收集；1723.25 s ≈ 28 分 43 秒） |
+| 16 | `py -3.8 -m pytest` 全绿 | **434 passed, 1 skipped**（3239.47 s ≈ 54 分）；与 3.12 通道同数 |
 | 17 | 布局门 + 脱敏门全绿 | 布局门 10 条判据全 PASS（`HANDOFF-M6` 落盘后）；脱敏门全绿（218 份文本文件） |
 | 18 | 四处状态副本同步翻 M5 ✅ | `plan/00` 台账 + `plan/00` 里程碑表 + `plan/05` 状态表 + `README.md` 路线图，M5 行全含 ✅ |
 | 19 | `plan/HANDOFF-M6.md` 已落盘（七节齐） | 本文件 |
@@ -46,20 +46,20 @@
 | **`report.py`（M5 核心）** | `src/tzaudit/report.py`：`build_report` / `check_header` / `parse_fail_on` / `gate_exit_code` / `report_exit_code` / `resolve_generated_at` + 三张表的固定列序常量 |
 | **`civil.format_utc`** | `src/tzaudit/civil.py`：UTC 时刻的 `YYYY-MM-DDTHH:MM:SSZ` 渲染（`--json` 的候选时刻用） |
 | **`audit` / `report` 子命令** | `cli.py::_run_audit` / `_run_report` / `_resolve_trees` / `_derive_header` + 两个渲染函数 |
-| **M5 测试** | `tests/test_audit.py`（31 项）/ `tests/test_report.py`（45 项） |
+| **M5 测试** | `tests/test_audit.py`（31 项）/ `tests/test_report.py`（50 项） |
 | **M5 金标测试** | `tests/test_m5_audit_gold.py`（13 项）：形态 8 项 / 复算入口 2 项 / 漂移与退化变异 5 项 |
 | **audit fixture** | `data/fixtures/audit/bc-scenario/{gen.py, expect.json, README.md, times.txt, old/, new/}`（6 份产物） |
 | **audit 金标** | `data/tzdb/pairs/2026a-2026e.audit.json`（`rows` / `single_version` / `statuses` / `same_utc_two_walls` / `reference_cross_checked`） |
 | **bench 第五套件** | `bench/run.py`：`SUITES` 加 `audit`、`AUDIT_TIMES` / `AUDIT_PAIRS`、`audit_stats` / `cross_check_audit` / `_reference_audit_status` / `_same_utc_two_walls` / `_audit_doc` / `_write_audit_expect` / `_check_audit` |
-| 契约测试（累计） | **429 passed, 1 skipped**（430 项收集；M4 的 338 项 + M5 的 92 项） |
+| 契约测试（累计） | **434 passed, 1 skipped**（435 项收集；M4 的 338 项 + M5 的 97 项） |
 | 门 | 布局门绿（`HANDOFF-M6` 落盘后）/ 脱敏门绿 |
 
 ### 两通道实测（M5 收尾，2026-10-22）
 
 | 通道 | 实测 |
 |---|---|
-| `py -3.12 -m pytest` | **429 passed, 1 skipped**，1740.58 s（29 分 00 秒） |
-| `py -3.8 -m pytest` | **429 passed, 1 skipped**，2293.84 s（38 分 13 秒）；与 3.12 通道同数 |
+| `py -3.12 -m pytest` | **434 passed, 1 skipped**，1723.25 s（28 分 43 秒） |
+| `py -3.8 -m pytest` | **434 passed, 1 skipped**，3239.47 s（53 分 59 秒）；与 3.12 通道同数 |
 | `bench/run.py --check`（五套件） | 退 0；分母 **7**（五版本 × 3 套件 + 2 个版本对套件）；`不一致: 0` |
 | `bench/run.py --check --suite audit` | `行=8 状态=GAP/OK/OVERLAP/VERSION_CHANGED 对拍=8`；`不一致: 0` |
 | fixture `--check` × 6 组 | 全 PASS（`audit/bc-scenario` 6 份 / `diff` 17 份 / `windows` 7 份 / `posix` 1 份 / `tzif` 4+13 份） |
@@ -233,7 +233,8 @@
 | **IANA 的 `A/B` 缩写是"左标准、右 DST"** | Dublin `IST/GMT` 配负 DST | `_abbr` 按 `is_dst` 选边 |
 | **`2:45s` 这类 `s` 后缀不能丢** | Chatham 规则全是 `2:45s` | `_rule_wall_epoch` 原样带出 `kind` |
 | **规则年份区间不得借出端点外的年** | 首版用 `from - 1` 起算 | `range(max(from, lo), min(to, hi) + 1)` |
-| **`pytest` 全量很慢** | M4 实测：3.12 = **1878.87 s（31 分）**、3.8 = **2302.04 s（38 分）**（339 项）；M5 又加了 ~89 项与 5 条变异测试 | **必须串行**；改代码后先跑受影响文件 |
+| **`pytest` 全量很慢** | M5 实测：3.12 = **1723.25 s（28 分 43 秒）**、3.8 = **3239.47 s（54 分）**（435 项收集 / 434 passed + 1 skipped） | **必须串行**；改代码后先跑受影响文件 |
+| **【M5 新增】跑测试期间不得切提交 / stash / 还原工作树** | 3.8 全量跑到一半时 `git stash` + `git checkout <旧提交>` → 子进程读到被换掉的源文件，报出 `TypeError: 'range_iterator' object is not callable`、`AttributeError: 'int' object has no attribute 'days_from_civil'` 与 stdout 全空的退出码 `3221225477`（7 条假红） | 红了的**第一件事看错误类型**：多处"内建函数被遮蔽"不是代码 bug，是文件在换；等测试跑完再动 git |
 | **台账状态格混 `🟡` + ✅ 里程碑号会红** | `LAYOUT.LEDGER` 把 `🟡` 当未完成标记 | 见 §2 第 3 条 |
 | **合成 fixture 的"表尾偏移"必须与 tail 在表尾处的偏移一致** | 表说 EST、tail 说 EDT → 假窗口 | 先验证树自洽再拿它做反例 |
 | **`bench/run.py` 的 `--suite` 取值集合已三度变化** | M3 加 `windows`、M4 加 `diff`、M5 加 `audit` → 旧反例测试假红 | 反例一律用 `no-such-suite` |
@@ -273,11 +274,15 @@
 >    `5 + len(DIFF_PAIRS)`，M5 加 `audit` 套件后分母从 6 变 7 → 假红。修法不是改数字，
 >    而是把"按版本对出金标的套件"登记进 `_pair_counts()`（`diff` / `audit` 各一行），
 >    让分母由**套件清单**算出。下一次加套件只需加一行登记。
-> 2. **Windows 上偶发 `0xC0000005`（退出码 3221225477）**：全量跑时两次出现
->    （`bench/run.py --check` 子进程、`windows --all` 子进程），**单独重跑不复现**，
->    且 stdout/stderr 都是空的（进程被整体杀掉，不是 Python 异常）。
->    判定为**本机环境的原生崩溃**（不是被测行为），处置：重跑；若持续复现，
->    在 M6 的"已知未验证项"里登记为环境噪声，**不得**为了让测试变绿而放宽断言。
+> 2. **"偶发 `0xC0000005` / 莫名其妙的 `TypeError`" 的真凶是"测试跑着的时候我在改工作树"**。
+>    首轮 3.8 全量出现过 7 条红（含 `TypeError: 'range_iterator' object is not callable`、
+>    `AttributeError: 'int' object has no attribute 'days_from_civil'`、以及 stdout/stderr
+>    全空的退出码 3221225477）。当时我为了"验证 M4 提交是否也崩"执行了
+>    `git stash` + `git checkout be96bb9`，**而 3.8 全量还在跑**——子进程读到了被换掉的源文件。
+>    这正是 `plan/HANDOFF-M5.md` §2 第 18 条"跑测试不要并发"的**加强版**：
+>    **跑测试期间也不得切换提交 / stash / 还原工作树**。干净重跑后两通道全绿。
+>    教训：红了的**第一件事是看错误类型**——"两个互不相干的模块同时报内建函数被遮蔽"，
+>    那不是代码 bug，是**文件在被换**。
 
 > **M5 的极性教训（新增）**：
 >

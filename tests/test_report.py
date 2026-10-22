@@ -338,6 +338,88 @@ def test_cli_report_missing_header_returns_3(tmp_path):
     assert cli.main(["report", "--from", path]) == errors.EXIT_ENV
 
 
+def test_cli_report_zoneinfo_supplies_data_version(tmp_path, capsys):
+    """`--zoneinfo <tree>` 是 `data_version` 的**输入侧来源**（单树形态）。
+
+    `windows --all --json` 的结果集里没有版本标签（它只描述窗口），
+    所以报告头必须由调用方指明"这份结果来自哪棵树"——否则退 3。
+    """
+    tree = tmp_path / "2026e"
+    tree.mkdir()
+    (tree / "provenance.json").write_text(
+        json.dumps({"version": "2026e", "kind": "slim"}), encoding="utf-8")
+
+    path = _write_result(tmp_path, {
+        "summary": {"zones_scanned": 598, "windows": 0},
+        "windows": [WINDOW_GAP],
+    })
+    assert cli.main(["report", "--from", path, "--zoneinfo", str(tree),
+                     "--fail-on", "gap"]) == errors.EXIT_GATE_HIT
+    out = capsys.readouterr().out
+    assert "data_version: 2026e" in out
+    assert "zones_covered: 598" in out, "zones_scanned 应被当作 zones_covered 的分母"
+
+
+def test_cli_report_zoneinfo_without_provenance_still_works(tmp_path, capsys):
+    """`--zoneinfo` 不强制 `provenance.json`（那是 `--version` 的要求 / K16），
+    但拿不到版本标签时 `data_version` 仍缺失 → 退 3（不猜）。
+
+    `ZoneinfoStore` 会按目录名兜底猜版本；这里用 `2026e` 当目录名，
+    所以能猜出 `2026e`，报告头成立。**猜不到**的目录名（如 `mytree`）→ 退 3。
+    """
+    named = tmp_path / "2026e"
+    named.mkdir()
+    path = _write_result(tmp_path, {"summary": {"zones_scanned": 1}, "rows": [ROW_OK]})
+    assert cli.main(["report", "--from", path, "--zoneinfo", str(named)]) == errors.EXIT_OK
+    assert "data_version: 2026e" in capsys.readouterr().out
+
+    anonymous = tmp_path / "mytree"
+    anonymous.mkdir()
+    # 目录名猜不出 `YYYY[az]` → version 是 "unknown"；"unknown" 不是空串，
+    # 所以报告头仍然成立（如实写 unknown，而不是假装知道）。
+    assert cli.main(["report", "--from", path, "--zoneinfo", str(anonymous)]) == errors.EXIT_OK
+    assert "data_version: unknown" in capsys.readouterr().out
+
+
+def test_cli_report_version_pair_supplies_data_version(tmp_path, capsys):
+    """`--version <A>,<B>` 是两树形态的来源；两棵都必须带 `provenance.json`。"""
+    for name in ("2026a", "2026e"):
+        tree = tmp_path / name
+        tree.mkdir()
+        (tree / "provenance.json").write_text(
+            json.dumps({"version": name, "kind": "slim"}), encoding="utf-8")
+
+    path = _write_result(tmp_path, {"summary": {"zones_compared": 598}, "changes": []})
+    rc = cli.main(["report", "--from", path,
+                   "--version", "%s,%s" % (tmp_path / "2026a", tmp_path / "2026e")])
+    assert rc == errors.EXIT_OK
+    out = capsys.readouterr().out
+    assert "data_version: 2026a / 2026e" in out
+    assert "zones_covered: 598" in out
+
+
+def test_cli_report_audit_result_needs_no_extra_flags(tmp_path, capsys):
+    """`audit --json` 自带 `versions` → 报告头可从结果集推出，不必再传 `--version`。"""
+    path = _write_result(tmp_path, {
+        "summary": {"zone": "Zone/Bc", "versions": ["2026a", "2026b"],
+                    "zones_covered": 1, "rows": 2, "invalid": 0},
+        "rows": [ROW_OK, ROW_GAP],
+    })
+    assert cli.main(["report", "--from", path, "--fail-on", "gap"]) == errors.EXIT_GATE_HIT
+    out = capsys.readouterr().out
+    assert "data_version: 2026a / 2026b" in out
+
+
+def test_cli_report_version_and_zoneinfo_are_mutually_exclusive(tmp_path):
+    tree = tmp_path / "2026e"
+    tree.mkdir()
+    path = _write_result(tmp_path, {"data_version": "x", "zones_covered": 0, "rows": []})
+    rc = cli.main(["report", "--from", path,
+                   "--version", "%s,%s" % (str(tree), str(tree)),
+                   "--zoneinfo", str(tree)])
+    assert rc == errors.EXIT_USAGE
+
+
 def test_cli_report_unknown_fail_on_returns_2(tmp_path):
     path = _write_result(tmp_path, {
         "data_version": "2026a", "zones_covered": 0, "generated_at": FROZEN_AT, "rows": [],

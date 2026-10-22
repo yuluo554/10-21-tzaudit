@@ -92,6 +92,10 @@ def build_parser():
         help="命中即以退出码 1 退出；逗号分隔，取 gap / overlap / history",
     )
     p_report.add_argument("--version", dest="versions", help="两棵树目录，逗号分隔 <A>,<B>")
+    p_report.add_argument(
+        "--zoneinfo",
+        help="结果集来自哪棵树（报告头 data_version 的输入侧来源；与 --version 互斥）",
+    )
 
     p_version = sub.add_parser("version", help="树/版本自检")
     p_version.add_argument("--zoneinfo", required=True, help="zoneinfo 树目录")
@@ -393,9 +397,9 @@ def _run_report(args):
     fail_on = report.parse_fail_on(args.fail_on)
 
     data_version, zones_covered, generated_at = _derive_header(source)
-    if args.versions:
-        # ``--version A,B`` 是报告头的**输入侧来源**（Q4：两个目录路径）——
-        # 结果集里没写版本标签时用它补，而不是去猜。
+    if args.versions or getattr(args, "zoneinfo", None):
+        # 报告头的**输入侧来源**：结果集里没写版本标签时用它补，而不是去猜。
+        # `--version A,B`（两棵树）/ `--zoneinfo <dir>`（单棵树）都能供出 data_version。
         stores = _resolve_trees(args)
         data_version = " / ".join(str(store.version) for store in stores)
 

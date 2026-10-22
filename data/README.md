@@ -215,6 +215,11 @@
 | `zones_covered` | 本次实际解析的 zone 数（分母，末态回填） | 缺失 → 退出码 3 |
 | `generated_at` | 生成时间（UTC，ISO 8601） | 唯一允许的时间戳；其余输出不得含时间戳 |
 
+- 三字段的**输入侧来源**：`data_version` / `zones_covered` 可从结果集的
+  `report_header` / 顶层 / `summary` 依次取；取不到时由 `report --zoneinfo <dir>`
+  （单树）或 `report --version <A>,<B>`（两树）提供——报告层**不猜**版本。
+  `generated_at` 由 CLI 注入（`SOURCE_DATE_EPOCH` 优先，否则当前 UTC）。
+
 ### 4.6 `roundtrip` 定义（与 PEP 495 `fold` 语义一致）
 
 ```
