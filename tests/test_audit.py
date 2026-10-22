@@ -296,10 +296,17 @@ def test_mutation_reordering_lets_version_changed_steal_gap():
 
 
 def test_invalid_is_decided_before_gap():
-    """`INVALID` 排第一：坏行即使本地时刻能落在 GAP 段，也必须是 `INVALID`。"""
+    """`INVALID` 排第一：坏行即使本地时刻能落在 GAP 段，也必须是 `INVALID`。
+
+    无真实树时退回 fixture：`Zone/Bc` 的旧树在 `2026-03-08 02:30` 同样有 GAP 段
+    （见 `bc-scenario/expect.json` 的 `bc-gap`），所以"坏行 vs GAP 段"的张力仍在。
+    """
     rows = audit.parse_times("bad,2026-03-08 02:30:00junk\n")
-    result = audit.audit_rows(rows, "America/New_York", versions=[_real("2026e")] if
-                              os.path.isdir(SLIM) else [_fixture_stores()[0]])
+    if os.path.isdir(SLIM):
+        zone, versions = "America/New_York", [_real("2026e")]
+    else:
+        zone, versions = "Zone/Bc", [_fixture_stores()[0]]
+    result = audit.audit_rows(rows, zone, versions=versions)
     assert result.rows[0].status == audit.INVALID
 
 
