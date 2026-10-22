@@ -1,0 +1,75 @@
+{
+  "expected": {
+    "changes": [
+      {
+        "class": "future_rule",
+        "evidence": "tail",
+        "note": "表逐字节相同，仅 tail 由 PST8PDT,M3.2.0,M11.1.0 变 MST7",
+        "zone": "Zone/TailRule"
+      },
+      {
+        "class": "future_rule",
+        "evidence": "tail",
+        "note": "表内新增 2026-11 永久 UTC-7 + tail 收成 MST7（表外行为变化）",
+        "zone": "Zone/BcPermanent"
+      },
+      {
+        "class": "abbreviation_only",
+        "evidence": "abbr",
+        "note": "转换点与 offset 全同，仅缩写 AAA 变 BBB",
+        "zone": "Zone/AbbrOnly"
+      },
+      {
+        "class": "future_rule",
+        "evidence": "tail",
+        "note": "缩写与 tail 同时变 → 顺序优先，必须落 future_rule 而非 abbreviation_only",
+        "zone": "Zone/AbbrAndTail"
+      },
+      {
+        "class": "future_rule",
+        "evidence": "tail",
+        "note": "link 变成独立规则 → alias_only 不得吸收",
+        "zone": "Zone/LinkB"
+      },
+      {
+        "class": "alias_only",
+        "evidence": "link",
+        "note": "旧树 LinkB 挂在 LinkA 名下（别名集合非空），新树 LinkB 独立 → 别名集合变空",
+        "zone": "Zone/LinkA"
+      },
+      {
+        "class": "history_reinterpreted",
+        "evidence": "table",
+        "note": "两类判据同时成立（历史 offset 变 + tail 变）→ 顺序优先取 history_reinterpreted；把 future_rule 提前则翻成 future_rule（顺序变异锚点）。evidence=table：历史差异落在表内转换点 1970-01-15",
+        "zone": "Zone/HistAndFuture"
+      }
+    ],
+    "class_order": [
+      "history_reinterpreted",
+      "future_rule",
+      "abbreviation_only",
+      "alias_only"
+    ],
+    "not_changes": [
+      "Zone/Identical"
+    ]
+  },
+  "fixture": "diff/change-classes",
+  "input": {
+    "injected": {
+      "Zone/AbbrAndTail": "缩写 AAA 变 BBB，**同时** tail AAA-1 变 BBB-2（offset 变）",
+      "Zone/AbbrOnly": "同一转换点、同一 offset，缩写 AAA 变 BBB；两树均无 tail",
+      "Zone/BcPermanent": "footer MST7MDT,M3.2.0,M11.1.0 变 MST7 + 表内新增 2026-11-01 永久 UTC-7",
+      "Zone/HistAndFuture": "历史 offset 7200→3600，**同时** tail CHF-1→CHG-2；两类判据同时成立，顺序必须取 history_reinterpreted",
+      "Zone/Identical": "两树逐字节相同 → 零变更（不得产出记录）",
+      "Zone/LinkA": "两树逐字节相同，且与旧树 LinkB 相同；新树里 LinkB 独立 → LinkA 的别名集合变空",
+      "Zone/LinkB": "旧树与 LinkA 逐字节相同（link 判据成立）；新树改成独立规则",
+      "Zone/TailRule": "表逐字节相同，仅 footer 由 PST8PDT,M3.2.0,M11.1.0 变 MST7"
+    },
+    "new_tree": "new",
+    "old_tree": "old",
+    "window": null,
+    "window_note": "null = 全历史（data/README.md §4.3：--window 只影响第 1 类）"
+  },
+  "why": "四类变更的判定顺序与互斥：表相同仅 tail 变必须落 future_rule；abbr 与 tail 同时变必须按顺序取 future_rule；逐字节相同不得产出记录；link 不得吸收规则变化。期望值由注入形态直接手写，不调产品代码"
+}

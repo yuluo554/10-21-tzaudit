@@ -42,11 +42,10 @@ def test_not_ready_exit_code_is_5():
 
     退役条件：该子命令实现落地时，本测试随 ``_unimplemented`` 一起删除。
 
-    **M3 已退役 ``windows``**（2026-10-21）：``windows`` 子命令落地，退出码 5 的
-    适用范围收窄到 ``diff`` / ``audit`` / ``report`` 三条。
+    **M3 已退役 ``windows``**（2026-10-21）、**M4 已退役 ``diff``**（2026-10-21）：
+    退出码 5 的适用范围收窄到 ``audit`` / ``report`` 两条（M5）。
     """
     for argv in (
-        ["diff", "--old", "a", "--new", "b"],
         ["audit", "--times", "t.txt", "--zone", "UTC"],
         ["report", "--from", "x.json"],
     ):
@@ -64,6 +63,18 @@ def test_windows_is_no_longer_not_ready(tmp_path):
     rc = cli.main(["windows", "--zone", "America/New_York", "--year", "2026",
                    "--zoneinfo", str(tree)])
     assert rc != errors.EXIT_NOT_READY, "windows 落地后不得再退 5（功能未就绪）"
+
+
+def test_diff_is_no_longer_not_ready(tmp_path):
+    """**防复活**断言（M4 新增）：``diff`` 落地后不得再退 5。
+
+    空树上比较 → 两个 zone 集合都空 → 退 0（成功、零变更），**不是** 5。
+    把 ``cli.main`` 的 ``diff`` 分派删掉或改回 ``_unimplemented``，这里立刻红。
+    """
+    empty = tmp_path / "empty"
+    empty.mkdir()
+    rc = cli.main(["diff", "--old", str(empty), "--new", str(empty)])
+    assert rc != errors.EXIT_NOT_READY, "diff 落地后不得再退 5（功能未就绪）"
 
 
 def test_environment_problem_maps_to_3(tmp_path):

@@ -182,14 +182,64 @@ def _run_windows(args):
     return EXIT_OK
 
 
+def _render_diff(result, as_json):
+    """``diff`` 的渲染（**stdout 只含结果**；无时间戳）。"""
+    if as_json:
+        emit(dumps_json(result.as_dict()))
+        return
+
+    summary = result.summary
+    lines = [
+        "版本差异分类: %s → %s" % (summary["old_version"], summary["new_version"]),
+        "窗口: %s" % ("全历史" if summary["window"] is None
+                      else "%d-%d" % (summary["window"][0], summary["window"][1])),
+        "比较 zone: %d    变更: %d" % (summary["zones_compared"], summary["changes"]),
+    ]
+    for cls in ("history_reinterpreted", "future_rule", "abbreviation_only", "alias_only"):
+        lines.append("  %-24s %d" % (cls, summary["classes"][cls]))
+    if summary["unclassified"]:
+        lines.append("  四类均不成立（如实列出）: %s" % ", ".join(summary["unclassified"]))
+    lines.append("")
+    for item in result.changes:
+        lines.append("%-26s %-24s %-6s %s → %s"
+                     % (item.zone, item.class_, item.evidence, item.before, item.after))
+    if not result.changes:
+        lines.insert(len(lines) - 1, "（两棵树无可分类差异）")
+    if result.errors:
+        lines.append("")
+        lines.append("错误 %d 处：" % len(result.errors))
+        for message in result.errors:
+            lines.append("  %s" % message)
+    emit("\n".join(lines))
+
+
+def _run_diff(args):
+    """``diff`` 子命令：两棵树的版本差异分类（``plan/03`` §六）。"""
+    from .diff import diff_trees
+    from .zoneinfo_store import ZoneinfoStore
+
+    old_store = ZoneinfoStore(args.old)
+    new_store = ZoneinfoStore(args.new)
+    result = diff_trees(old_store, new_store, window=args.window, zone=args.zone)
+
+    _render_diff(result, args.json)
+    if result.errors:
+        # 环境不满足（这台机器上有 zone 读不了）——不中断整批，但退出码必须反映出来
+        sys.stderr.write("%s: %d 个 zone 比较失败\n" % (PROG, len(result.errors)))
+        return EXIT_ENV
+    return EXIT_OK
+
+
 def _unimplemented(command):
-    """尚未落地的子命令（M3 后只剩 ``diff`` / ``audit`` / ``report``）。
+    """尚未落地的子命令（M4 后只剩 ``audit`` / ``report``）。
 
     退出码 5（功能未就绪）是**临时**语义：每个子命令落地时在同一提交里退役它
     （`errors` 常量 → 本函数 → `tests/test_exit_codes.py` → 文档，四处同步）。
+
+    **M3 已退役 ``windows``、M4 已退役 ``diff``**；``audit`` / ``report`` 仍在 5（M5）。
     """
     raise NotImplementedYet(
-        "子命令 %s 的解析层尚未实现（见 plan/03）；当前可用：version、windows"
+        "子命令 %s 的解析层尚未实现（见 plan/03）；当前可用：version、windows、diff"
         % command
     )
 
@@ -213,6 +263,8 @@ def main(argv=None):
             return _run_version(args)
         if args.command == "windows":
             return _run_windows(args)
+        if args.command == "diff":
+            return _run_diff(args)
         return _unimplemented(args.command)
     except TzAuditError as exc:
         sys.stderr.write("%s: %s\n" % (PROG, exc.message))

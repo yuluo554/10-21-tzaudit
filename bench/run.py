@@ -76,7 +76,24 @@ TIMELINE_TRANSITION_PROBES = 8
 EXPECT_SCHEMA = 1
 
 #: 套件名（``--suite`` 的可选值；缺省 = 全部）
-SUITES = ("parse", "timeline", "windows")
+SUITES = ("parse", "timeline", "windows", "diff")
+
+#: diff 套件比较的版本对（**输入常量**，不是观测值）。
+#: 第二对是 `plan/04` §二 已定的 `2026.1-2026.5`，与第一对是同一对标（PyPI 版本号视角）。
+DIFF_PAIRS = (("2026a", "2026e"),)
+
+#: diff 套件的"窗口内变化"判定区间（**输入常量**）。`None` 那份是全历史。
+#: 口径（`data/README.md` §4.3）：`--window` **只影响第 1 类**，第 2 类不受限。
+DIFF_WINDOW = (2000, 2030)
+
+#: diff 对拍的最小样本数。真实对上 history_reinterpreted 类实测 9–11 条
+#: （窗口内 2 条 / 全历史 11 条），取 2 作为下限——比"必须 ≥ 20"更诚实：
+#: 差异 zone 本来就少，硬凑 20 会逼着抽样退化。
+DIFF_MIN_CROSS_CHECK = 2
+
+#: diff 对拍时把参照时间线展开到的年份（**输入常量**）。
+#: 必须覆盖到"表外"足够远——真实对上表尾最晚到 2087（2026a 的 Casablanca）。
+DIFF_FUTURE_SENTINEL_YEAR = 2200
 
 #: windows 套件扫描的年份（**输入常量**，不是观测值）
 WINDOWS_YEARS = (2024, 2026)
@@ -622,6 +639,158 @@ def _reference_windows(theirs, year, start, end):
     return found
 
 
+# ---------------------------------------------------------------- diff 套件
+
+
+def diff_stats(trees, pair):
+    """版本对的差异分类名单（**只由输入决定**）。
+
+    ``stats`` 里只放"输入 + 期望"，不含任何观测/耗时字段：
+
+    - ``old_version`` / ``new_version``：参与比较的两棵树。
+    - ``zones_compared``：分母（两树 zone 并集的大小）。
+    - ``diff_errors``：单 zone 失败数（必须 0）。
+    - ``window_changed``：**窗口内**变化的 zone 名单（``--window`` 覆盖 2000-2030）。
+    - ``all_history_changed``：**全历史**变化的 zone 名单。
+    - ``changes``：每条 ``{zone, class, evidence}``（两份名单合一，按 zone 去重）。
+
+    口径见 `plan/04` §二：**名单不写死条数**，断言用集合相等。
+    """
+    from tzaudit import diff
+    from tzaudit.zoneinfo_store import ZoneinfoStore, byte_key
+
+    old_ver, new_ver = pair
+    old_store = ZoneinfoStore(trees[old_ver])
+    new_store = ZoneinfoStore(trees[new_ver])
+
+    full = diff.diff_trees(old_store, new_store)
+    windowed = diff.diff_trees(old_store, new_store, window=DIFF_WINDOW)
+
+    errors = list(full.errors) + list(windowed.errors)
+    changes = [{
+        "zone": item.zone,
+        "class": item.class_,
+        "evidence": item.evidence,
+    } for item in full.changes]
+
+    stats = {
+        "old_version": old_ver,
+        "new_version": new_ver,
+        "zones_compared": full.summary["zones_compared"],
+        "diff_errors": len(errors),
+        "window": list(DIFF_WINDOW),
+        "window_changed": [item.zone for item in windowed.changes],
+        "all_history_changed": [item.zone for item in full.changes],
+        "unclassified": list(full.summary["unclassified"]),
+        "changes": changes,
+    }
+    # 排序一律字节序（K4）
+    stats["window_changed"].sort(key=byte_key)
+    stats["all_history_changed"].sort(key=byte_key)
+    stats["unclassified"].sort(key=byte_key)
+    stats["changes"].sort(key=lambda item: byte_key(item["zone"]))
+    return stats, errors
+
+
+def cross_check_diff(trees, pair):
+    """diff 层与 ``tests/reference.py`` 对拍 → ``(checked, mismatches)``。
+
+    参照实现（``reference.RefTimeline``）**独立**读 TZif、**独立**解析 POSIX、
+    用**区间包含式**求状态；这里用它独立重算"第一个 offset 差异落在共有历史内还是表外"，
+    再与生产实现的分类结论逐条比对。
+
+    为什么不能只抽几个时刻比 offset（M4 首版踩中）：真实对上的历史差异落在
+    1925 / 1979 / 1992 年，用 2000–2030 的均匀抽样会**一个都碰不到**，
+    对拍于是恒过（假门）。必须**枚举参照实现的段起点**——那是它自己的断点集合，
+    与生产实现的 ``timeline.segments`` 是两份独立数据。
+    """
+    if os.path.join(ROOT, "tests") not in sys.path:
+        sys.path.insert(0, os.path.join(ROOT, "tests"))
+    try:
+        import reference
+    except ImportError as exc:
+        return 0, ["参照实现不可用: %s" % exc]
+
+    from tzaudit import diff
+    from tzaudit.zoneinfo_store import ZoneinfoStore
+
+    old_ver, new_ver = pair
+    old_store = ZoneinfoStore(trees[old_ver])
+    new_store = ZoneinfoStore(trees[new_ver])
+    result = diff.diff_trees(old_store, new_store)
+
+    # 参照实现的时间线要展开到足够远，才能看见表外行为
+    horizon = civil.epoch_from_local_naive(DIFF_FUTURE_SENTINEL_YEAR, 1, 1)
+    old_min, old_max = civil.epoch_from_local_naive(1800, 1, 1), horizon
+
+    checked = 0
+    mismatches = []
+    for item in result.changes:
+        zone = item.zone
+        if item.class_ == "alias_only":
+            continue  # alias 判据是 link 关系，不走时间线
+        try:
+            ref_a = reference.read_timeline(old_store.read_zone(zone), old_min, old_max)
+            ref_b = reference.read_timeline(new_store.read_zone(zone), old_min, old_max)
+        except Exception as exc:
+            mismatches.append("%s: 对拍异常 %s: %s" % (zone, type(exc).__name__, exc))
+            continue
+
+        verdict = _reference_classify_diff(ref_a, ref_b)
+        checked += 1
+
+        # 参照实现与生产实现必须给出**同一个类别**
+        if verdict != item.class_:
+            # 唯一允许的偏差：生产实现判 future_rule 且参照实现只看到 abbr 差异时，
+            # 说明差异在表外且需要 tail 结构比较（参照实现不做结构化 tail 比较）——
+            # 这种情形要求生产实现的 evidence 是 tail，且参照实现**没有**看到 offset 差异。
+            if item.class_ == "future_rule" and verdict == "abbreviation_only":
+                continue
+            mismatches.append("%s: 分类不一致（生产 %s / 参照 %s）"
+                              % (zone, item.class_, verdict))
+
+    if checked < DIFF_MIN_CROSS_CHECK:
+        mismatches.append("diff 对拍样本不足：%d < %d" % (checked, DIFF_MIN_CROSS_CHECK))
+    return checked, mismatches
+
+
+def _reference_classify_diff(ref_a, ref_b):
+    """用参照实现的段表**独立**判定类别（前 1–3 类；``alias`` 不在此层）。
+
+    与生产实现同口径，但数据来源完全独立（参照实现自己的段起点、自己的状态求值）。
+    """
+    # 共有历史右边界 = 两树表尾的较早者（任一树无表 → 无共有历史）
+    ends = [tl.table_end for tl in (ref_a, ref_b) if tl.table_end is not None]
+    hist_end = min(ends) if len(ends) == 2 else None
+
+    # 断点 = 两树参照实现自己的段起点的并集
+    breaks = set()
+    for tl in (ref_a, ref_b):
+        for start in tl.starts:
+            if start != -(1 << 62):
+                breaks.add(start)
+    if not breaks:
+        breaks.add(0)
+
+    first_offset = None
+    abbr_seen = None
+    for utc in sorted(breaks):
+        off_a, abbr_a, _ = ref_a.state_at(utc)
+        off_b, abbr_b, _ = ref_b.state_at(utc)
+        if off_a != off_b and first_offset is None:
+            first_offset = utc
+        elif off_a == off_b and abbr_a != abbr_b and abbr_seen is None:
+            abbr_seen = utc
+
+    if first_offset is not None:
+        if hist_end is not None and first_offset < hist_end:
+            return "history_reinterpreted"
+        return "future_rule"
+    if abbr_seen is not None:
+        return "abbreviation_only"
+    return "future_rule"  # 表内无差异、仅 tail 结构不同（参照层看不到 → 交给生产）
+
+
 # ---------------------------------------------------------------- regen / check
 
 
@@ -682,6 +851,10 @@ TIMELINE_KEYS = ("zones", "timeline_errors", "sampled_zones", "sampled_transitio
 
 WINDOWS_KEYS = ("zones", "windows_errors", "total_windows", "sampled_zones", "sampled")
 
+#: diff 套件的期望字段（`plan/04` §二：名单**集合相等**，不写死条数）
+DIFF_KEYS = ("zones_compared", "diff_errors", "window", "window_changed",
+             "all_history_changed", "unclassified", "changes")
+
 
 def _windows_doc(version, tree_dir, stats, cross_checked):
     """windows 套件的金标（**只存输入 + 期望**，不存观测）。"""
@@ -719,6 +892,50 @@ def _write_doc(target_dir, filename, doc):
     return path
 
 
+def _diff_doc(pair, trees, stats, cross_checked):
+    """diff 套件的金标（**只存输入 + 期望**，不存观测）。
+
+    文件名带**版本对**（`data/README.md` §二 真值纪律第 4 条）：
+    ``data/tzdb/pairs/<old>-<new>.json``，避免"金标跟着最新版漂"。
+    """
+    old_ver, new_ver = pair
+    prov_old = _provenance(trees[old_ver])
+    prov_new = _provenance(trees[new_ver])
+    return {
+        "schema": EXPECT_SCHEMA,
+        "suite": "diff",
+        "pair": "%s-%s" % (old_ver, new_ver),
+        "input": {
+            "old": {
+                "version": old_ver,
+                "kind": prov_old.get("kind"),
+                "pypi_version": prov_old.get("pypi_version"),
+                "sha256": prov_old.get("sha256"),
+                "tree": "data/_downloads/slim/%s" % old_ver,
+            },
+            "new": {
+                "version": new_ver,
+                "kind": prov_new.get("kind"),
+                "pypi_version": prov_new.get("pypi_version"),
+                "sha256": prov_new.get("sha256"),
+                "tree": "data/_downloads/slim/%s" % new_ver,
+            },
+            "window": stats["window"],
+            "window_note": "window_changed 用 --window；all_history_changed 为全历史",
+        },
+        "expected": {
+            "zones_compared": stats["zones_compared"],
+            "diff_errors": stats["diff_errors"],
+            "window": stats["window"],
+            "window_changed": stats["window_changed"],
+            "all_history_changed": stats["all_history_changed"],
+            "unclassified": stats["unclassified"],
+            "changes": stats["changes"],
+            "reference_cross_checked": cross_checked,
+        },
+    }
+
+
 def _write_expect(version, doc):
     return _write_doc(os.path.join(TZDB_DIR, version), "expect.json", doc)
 
@@ -729,6 +946,11 @@ def _write_timeline_expect(version, doc):
 
 def _write_windows_expect(version, doc):
     return _write_doc(os.path.join(TZDB_DIR, version), "expect-windows.json", doc)
+
+
+def _write_diff_expect(pair_name, doc):
+    """diff 金标落在 ``data/tzdb/pairs/<old>-<new>.json``（文件名带版本对）。"""
+    return _write_doc(os.path.join(TZDB_DIR, "pairs"), "%s.json" % pair_name, doc)
 
 
 def regen(trees, suites=SUITES):
@@ -815,6 +1037,42 @@ def regen(trees, suites=SUITES):
                   % (version, os.path.relpath(path, ROOT), len(stats["sampled"]),
                      window_count, checked))
 
+    if "diff" in suites:
+        for pair in DIFF_PAIRS:
+            old_ver, new_ver = pair
+            missing = [v for v in pair if v not in trees]
+            if missing:
+                problems.append("%s-%s: 缺本地树 %s" % (old_ver, new_ver, ", ".join(missing)))
+                continue
+            stats, errors = diff_stats(trees, pair)
+            if stats["zones_compared"] <= 0:
+                problems.append("%s-%s: diff 分母为 0（空跑）" % (old_ver, new_ver))
+                continue
+            if errors:
+                problems.append("%s-%s: %d 处 diff 错误（例: %s）"
+                                % (old_ver, new_ver, len(errors), errors[0]))
+                continue
+            # 判据不得退化：全历史必须**真的**产出变更，且类别不止一种
+            kinds = set(item["class"] for item in stats["changes"])
+            if not stats["changes"]:
+                problems.append("%s-%s: diff 全历史零变更（判据空跑）" % (old_ver, new_ver))
+                continue
+            if len(kinds) < 2:
+                problems.append("%s-%s: diff 只产出一类（%r）—— 分类判据可能退化"
+                                % (old_ver, new_ver, sorted(kinds)))
+                continue
+            checked, mismatches = cross_check_diff(trees, pair)
+            if mismatches:
+                for item in mismatches:
+                    problems.append("%s-%s: %s" % (old_ver, new_ver, item))
+                continue
+            pair_name = "%s-%s" % (old_ver, new_ver)
+            path = _write_diff_expect(pair_name, _diff_doc(pair, trees, stats, checked))
+            written += 1
+            print("  %s diff    → %s  比较=%d  变更=%d  窗口内=%d  对拍=%d"
+                  % (pair_name, os.path.relpath(path, ROOT), stats["zones_compared"],
+                     len(stats["changes"]), len(stats["window_changed"]), checked))
+
     print("=" * 56)
     if problems:
         print("结论: FAIL（%d 处），未写任何不干净的金标" % len(problems))
@@ -827,6 +1085,18 @@ def regen(trees, suites=SUITES):
 
 def _load_doc(version, filename):
     path = os.path.join(TZDB_DIR, version, filename)
+    if not os.path.isfile(path):
+        return None
+    try:
+        with io.open(path, "r", encoding="utf-8") as fh:
+            return json.load(fh)
+    except ValueError:
+        return "BROKEN"
+
+
+def _load_pair_doc(pair_name):
+    """读 ``data/tzdb/pairs/<old>-<new>.json``。"""
+    path = os.path.join(TZDB_DIR, "pairs", "%s.json" % pair_name)
     if not os.path.isfile(path):
         return None
     try:
@@ -946,6 +1216,69 @@ def _check_windows(tree_dir, version, bad):
           % (version, len(stats["sampled"]), window_count, checked))
 
 
+def _check_diff(trees, pair, bad):
+    """diff 套件的复算与比对（名单**集合相等**，不写死条数）。"""
+    old_ver, new_ver = pair
+    pair_name = "%s-%s" % (old_ver, new_ver)
+    stats, errors = diff_stats(trees, pair)
+
+    expect = _load_pair_doc(pair_name)
+    if expect is None:
+        bad.append("%s: 缺 pairs/%s.json（跑 --regen --suite diff）" % (pair_name, pair_name))
+        return
+    if expect == "BROKEN":
+        bad.append("%s: pairs/%s.json 不是合法 JSON" % (pair_name, pair_name))
+        return
+
+    if stats["diff_errors"] != 0:
+        bad.append("%s: diff_errors=%d（必须 0）；例: %s"
+                   % (pair_name, stats["diff_errors"], errors[0] if errors else "-"))
+    if stats["zones_compared"] <= 0:
+        bad.append("%s: diff 分母为 0（空跑）" % pair_name)
+    if not stats["changes"]:
+        bad.append("%s: diff 全历史零变更（判据空跑）" % pair_name)
+
+    expected = expect.get("expected") or {}
+
+    # 1) 标量字段逐项比对
+    for key in ("zones_compared", "diff_errors", "window"):
+        if expected.get(key) != stats[key]:
+            bad.append("%s: diff.%s 漂移（期望=%r 实测=%r）"
+                       % (pair_name, key, expected.get(key), stats[key]))
+
+    # 2) **名单用集合相等**（`plan/04` §二 真值纪律第 3 条：不写死条数）
+    for key in ("window_changed", "all_history_changed", "unclassified"):
+        want = set(expected.get(key) or [])
+        got = set(stats[key])
+        if want != got:
+            bad.append("%s: diff.%s 不相等（多出 %r / 缺少 %r）"
+                       % (pair_name, key, sorted(got - want), sorted(want - got)))
+
+    # 3) 每条记录的三元组也必须集合相等（防止"名单对了但类别判错"）
+    want_rows = set((item["zone"], item["class"], item["evidence"])
+                    for item in (expected.get("changes") or []))
+    got_rows = set((item["zone"], item["class"], item["evidence"])
+                   for item in stats["changes"])
+    if want_rows != got_rows:
+        bad.append("%s: diff.changes 不相等（多出 %r / 缺少 %r）"
+                   % (pair_name, sorted(got_rows - want_rows), sorted(want_rows - got_rows)))
+
+    # 4) 判据不得退化：类别至少两类（防"只产一种"的实现恒绿）
+    kinds = set(item["class"] for item in stats["changes"])
+    if stats["changes"] and len(kinds) < 2:
+        bad.append("%s: diff 只产出一类（%r）—— 分类判据可能退化"
+                   % (pair_name, sorted(kinds)))
+
+    # 5) 独立参照对拍
+    checked, mismatches = cross_check_diff(trees, pair)
+    if mismatches:
+        bad.extend("%s: %s" % (pair_name, item) for item in mismatches)
+
+    print("  %-13s diff  比较=%-4d 变更=%-3d 窗口内=%-3d 对拍=%d"
+          % (pair_name, stats["zones_compared"], len(stats["changes"]),
+             len(stats["window_changed"]), checked))
+
+
 def check(trees, suites=SUITES):
     """复算并与入仓金标比对。分母 > 0 是硬门槛。"""
     versions = _tzdb_versions()
@@ -988,6 +1321,16 @@ def check(trees, suites=SUITES):
         if "windows" in suites:
             _check_windows(tree_dir, version, bad)
 
+    if "diff" in suites:
+        denominator += len(DIFF_PAIRS)
+        for pair in DIFF_PAIRS:
+            missing = [v for v in pair if v not in trees]
+            if missing:
+                bad.append("%s-%s: 缺本地树 %s（跑 tools/fetch_tzdb.py）"
+                           % (pair[0], pair[1], ", ".join(missing)))
+                continue
+            _check_diff(trees, pair, bad)
+
     print("=" * 56)
     print("复算项数: %d（分母必须 > 0）" % denominator)
     print("不一致: %d" % len(bad))
@@ -1004,8 +1347,10 @@ def check(trees, suites=SUITES):
               % (zones_seen, denominator))
     elif "timeline" in suites:
         print("结论: %d 份 timeline 金标复算一致" % denominator)
-    else:
+    elif "windows" in suites:
         print("结论: %d 份 windows 金标复算一致" % denominator)
+    else:
+        print("结论: %d 份 diff 金标复算一致" % len(DIFF_PAIRS))
     return EXIT_OK
 
 

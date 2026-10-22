@@ -1,31 +1,201 @@
 {
   "expected": {
-    "all_history_changed": null,
-    "classes_pending": true,
-    "window_changed": null,
-    "zone_set_equal": true
+    "all_history_changed": [
+      "Africa/Casablanca",
+      "Africa/El_Aaiun",
+      "America/Bogota",
+      "America/Chicago",
+      "America/Denver",
+      "America/Edmonton",
+      "America/Inuvik",
+      "America/Los_Angeles",
+      "America/New_York",
+      "America/Rainy_River",
+      "America/Vancouver",
+      "America/Winnipeg",
+      "America/Yellowknife",
+      "Asia/Tehran",
+      "CST6CDT",
+      "Canada/Central",
+      "Canada/Mountain",
+      "Canada/Pacific",
+      "EST5EDT",
+      "Eire",
+      "Europe/Dublin",
+      "Iran",
+      "MST7MDT",
+      "PST8PDT"
+    ],
+    "changes": [
+      {
+        "class": "future_rule",
+        "evidence": "tail",
+        "zone": "Africa/Casablanca"
+      },
+      {
+        "class": "future_rule",
+        "evidence": "tail",
+        "zone": "Africa/El_Aaiun"
+      },
+      {
+        "class": "history_reinterpreted",
+        "evidence": "table",
+        "zone": "America/Bogota"
+      },
+      {
+        "class": "alias_only",
+        "evidence": "link",
+        "zone": "America/Chicago"
+      },
+      {
+        "class": "alias_only",
+        "evidence": "link",
+        "zone": "America/Denver"
+      },
+      {
+        "class": "future_rule",
+        "evidence": "tail",
+        "zone": "America/Edmonton"
+      },
+      {
+        "class": "future_rule",
+        "evidence": "tail",
+        "zone": "America/Inuvik"
+      },
+      {
+        "class": "alias_only",
+        "evidence": "link",
+        "zone": "America/Los_Angeles"
+      },
+      {
+        "class": "alias_only",
+        "evidence": "link",
+        "zone": "America/New_York"
+      },
+      {
+        "class": "future_rule",
+        "evidence": "tail",
+        "zone": "America/Rainy_River"
+      },
+      {
+        "class": "future_rule",
+        "evidence": "tail",
+        "zone": "America/Vancouver"
+      },
+      {
+        "class": "future_rule",
+        "evidence": "tail",
+        "zone": "America/Winnipeg"
+      },
+      {
+        "class": "future_rule",
+        "evidence": "tail",
+        "zone": "America/Yellowknife"
+      },
+      {
+        "class": "history_reinterpreted",
+        "evidence": "table",
+        "zone": "Asia/Tehran"
+      },
+      {
+        "class": "history_reinterpreted",
+        "evidence": "table",
+        "zone": "CST6CDT"
+      },
+      {
+        "class": "future_rule",
+        "evidence": "tail",
+        "zone": "Canada/Central"
+      },
+      {
+        "class": "future_rule",
+        "evidence": "tail",
+        "zone": "Canada/Mountain"
+      },
+      {
+        "class": "future_rule",
+        "evidence": "tail",
+        "zone": "Canada/Pacific"
+      },
+      {
+        "class": "history_reinterpreted",
+        "evidence": "table",
+        "zone": "EST5EDT"
+      },
+      {
+        "class": "history_reinterpreted",
+        "evidence": "table",
+        "zone": "Eire"
+      },
+      {
+        "class": "history_reinterpreted",
+        "evidence": "table",
+        "zone": "Europe/Dublin"
+      },
+      {
+        "class": "history_reinterpreted",
+        "evidence": "table",
+        "zone": "Iran"
+      },
+      {
+        "class": "history_reinterpreted",
+        "evidence": "table",
+        "zone": "MST7MDT"
+      },
+      {
+        "class": "history_reinterpreted",
+        "evidence": "table",
+        "zone": "PST8PDT"
+      }
+    ],
+    "diff_errors": 0,
+    "reference_cross_checked": 20,
+    "unclassified": [],
+    "window": [
+      2000,
+      2030
+    ],
+    "window_changed": [
+      "Africa/Casablanca",
+      "Africa/El_Aaiun",
+      "America/Chicago",
+      "America/Denver",
+      "America/Edmonton",
+      "America/Inuvik",
+      "America/Los_Angeles",
+      "America/New_York",
+      "America/Rainy_River",
+      "America/Vancouver",
+      "America/Winnipeg",
+      "America/Yellowknife",
+      "Canada/Central",
+      "Canada/Mountain",
+      "Canada/Pacific"
+    ],
+    "zones_compared": 598
   },
   "input": {
     "new": {
       "kind": "slim",
       "pypi_version": "2026.5",
       "sha256": "b683bd1b6659ddcd810ff02ad09ba821d4bf1065072805063eb35c49617905ac",
-      "version": "2026e",
-      "zones": 598
+      "tree": "data/_downloads/slim/2026e",
+      "version": "2026e"
     },
     "old": {
       "kind": "slim",
       "pypi_version": "2026.1",
       "sha256": "4b1d2be7ac37ceafd7327b961aa3a54e467efbdb563a23655fbfe0d39cfc42a9",
-      "version": "2026a",
-      "zones": 598
+      "tree": "data/_downloads/slim/2026a",
+      "version": "2026a"
     },
-    "window": null,
-    "window_note": "null = 全历史（Q5 定案：diff 默认全历史）"
+    "window": [
+      2000,
+      2030
+    ],
+    "window_note": "window_changed 用 --window；all_history_changed 为全历史"
   },
-  "note": "M1 只固定输入与两侧树凭据；四类分类名单由 M4 的 diff 复算后回填（plan/04 §二）。此刻不得出现任何分类结论——未计算不等于空集。",
   "pair": "2026a-2026e",
-  "pending_milestone": "M4",
   "schema": 1,
-  "status": "skeleton"
+  "suite": "diff"
 }

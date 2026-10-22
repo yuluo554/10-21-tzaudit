@@ -14,13 +14,13 @@
 
 from __future__ import print_function
 
+import ast
 import io
 import json
 import os
 import struct
 import subprocess
 import sys
-
 import pytest
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -289,30 +289,47 @@ def test_expect_has_no_absolute_paths():
         assert ":\\" not in text and ":/Users/" not in text
 
 
-def test_pairs_skeleton_is_honest_about_pending_classes():
-    """``pairs/2026a-2026e.json`` 是 M1 的骨架：**只许有输入，不许编分类结论**。
+def test_pairs_gold_is_filled_by_m4_not_guessed():
+    """``pairs/2026a-2026e.json`` **已由 M4 复算回填**（不再是骨架）。
 
-    这条防"为了让 M4 的表看起来有内容，先填一堆名单"——那会把金标变成猜测。
-    未计算必须是 ``null`` + ``pending_milestone``，不是空数组。
+    M1 时它是骨架：``status="skeleton"`` + 两份名单为 ``null`` + ``classes_pending=true``
+    ——那条断言防的是"为了让 M4 的表看起来有内容，先填一堆名单"（把金标变成猜测）。
+
+    **M4 落地后本条随之改写**（不是删掉）：骨架的禁止换成了**回填的自证**——
+    名单必须真的算过（非 null）、类别必须真的出现、且必须留下"由 diff 复算"的痕迹。
+    这正是 `plan/04` §二 的真值纪律：未计算 ≠ 空集。
     """
     path = os.path.join(TZDB, "pairs", "2026a-2026e.json")
     with io.open(path, "r", encoding="utf-8") as fh:
         doc = json.load(fh)
 
-    assert doc["status"] == "skeleton"
-    assert doc["pending_milestone"] == "M4"
+    # 1) 身份：仍是同一对树，仍是 slim（K14）
+    assert doc["pair"] == "2026a-2026e"
     assert doc["input"]["old"]["version"] == "2026a"
     assert doc["input"]["new"]["version"] == "2026e"
     assert doc["input"]["old"]["kind"] == "slim"
     assert doc["input"]["new"]["kind"] == "slim"
 
-    # 未计算的项必须是 null（空列表会被读成"算过且为空"）
-    assert doc["expected"]["window_changed"] is None
-    assert doc["expected"]["all_history_changed"] is None
-    assert doc["expected"]["classes_pending"] is True
-    # 不得出现任何分类结论字段
-    for key in ("changes", "classes", "history_reinterpreted", "future_rule"):
-        assert key not in doc["expected"], "骨架里不得预先填分类结论: %s" % key
+    # 2) 不再是骨架：M4 已回填（骨架期的两个标记必须都消失）
+    assert doc.get("status") != "skeleton", "M4 已落地，金标不得仍是骨架"
+    assert "pending_milestone" not in doc, "回填后不得再留 pending_milestone"
+
+    # 3) 名单必须真的算过（null = 没算；空列表 = 算过且为空，本数据下有变更）
+    expected = doc["expected"]
+    assert expected["window_changed"] is not None, "未计算不得写成 null 蒙过"
+    assert expected["all_history_changed"] is not None
+    assert expected["all_history_changed"], "本数据对确有变更（空列表才是可疑）"
+
+    # 4) 类别必须真的出现，且是四类口径里的名字
+    from tzaudit import diff as diff_module
+
+    kinds = set(item["class"] for item in expected["changes"])
+    assert kinds, "changes 不得为空"
+    assert kinds <= set(diff_module.CLASS_ORDER), kinds
+
+    # 5) 必须留下"由生产实现复算过"的凭据（参照对拍的样本数）
+    assert expected["reference_cross_checked"] > 0, "必须记明对拍样本数"
+    assert "classes_pending" not in expected, "回填后不得再留 classes_pending"
 
 
 # ---------------------------------------------------------------- 4. bench/run.py 入口
@@ -530,7 +547,21 @@ def test_bench_check_passes_with_real_trees():
     rc, out = _run_bench(["--check"])
     assert rc == 0, out
     assert "parse_errors=0" in out
-    assert "复算项数: 5" in out
+    # 分母 = 五版本 × 各套件 + `DIFF_PAIRS` 的对数（M4 加 diff 套件后从 5 变 6）。
+    # 这里断言"分母与套件清单自洽"，而**不写死**具体数字——M5 再加套件时不必改这条。
+    expected = 5 + len(_diff_pairs())
+    assert "复算项数: %d" % expected in out, out
+
+
+def _diff_pairs():
+    """从 `bench/run.py` 读 `DIFF_PAIRS`（不 import，避免它 `sys.path` 副作用）。"""
+    path = os.path.join(ROOT, "bench", "run.py")
+    with io.open(path, "r", encoding="utf-8") as fh:
+        tree = ast.parse(fh.read(), filename=path)
+    for node in tree.body:
+        if isinstance(node, ast.Assign) and getattr(node.targets[0], "id", "") == "DIFF_PAIRS":
+            return ast.literal_eval(node.value)
+    raise AssertionError("bench/run.py 里找不到 DIFF_PAIRS")
 
 
 @needs_trees

@@ -116,19 +116,31 @@ tzaudit windows --all --year 2026 --zoneinfo <tree> --json
 `--json` 输出 `{"year", "zones", "windows", "summary"}`；`summary.zones_scanned` 是实际扫描的
 zone 数，`summary.errors` 是单 zone 失败清单（有错退 3，不中断整批）。
 
-### 2. 版本差异（四类互斥）
+### 2. 版本差异（四类互斥）— ✅ M4 已落地
 
 ```bash
 tzaudit diff --old <tree-2026a> --new <tree-2026e> --json
+tzaudit diff --old <tree-2026a> --new <tree-2026e> --window 2000-2030
+tzaudit diff --old <tree-2026a> --new <tree-2026e> --zone America/Vancouver
 ```
 
 ```json
 {"changes": [{"zone": "America/Vancouver", "class": "future_rule",
-              "evidence": "tail", "before": "PST8PDT,M3.2.0,M11.1.0", "after": "MST7"}]}
+              "evidence": "tail", "before": "tail=PST8PDT,M3.2.0,M11.1.0",
+              "after": "tail=MST7", "window": null}],
+ "summary": {"zones_compared": 598, "changes": 24,
+             "classes": {"history_reinterpreted": 11, "future_rule": 9,
+                         "abbreviation_only": 0, "alias_only": 4},
+             "unclassified": [], "zone_set_equal": true}}
 ```
 
 类别的判定顺序固定：`history_reinterpreted` → `future_rule` → `abbreviation_only` → `alias_only`
-（口径见 `data/README.md` §4.3）。
+（口径见 `data/README.md` §4.3），同一 zone 只输出一条。`--window` **只影响第 1 类**
+（历史重解释），第 2 类（表外规则）不受窗口限制——这是为什么 `--window 2000-2030`
+不会让 Vancouver 消失。
+
+四类互斥但**不穷尽**：窗口把唯一的历史差异排除后，某些 zone 四类都不成立，
+它们进 `summary.unclassified` 如实列出，**不**被塞进 `alias_only` 当垃圾桶。
 
 ### 3. 清单审计（不接 cron 表达式）
 
@@ -207,7 +219,7 @@ py -3.12 tools/check-desensitized.py               # 脱敏门
 | M1 | 数据先行：五版本 provenance + 金标复算入口 | ✅ 已完成（2026-10-21） |
 | M2 | TZif 双引擎（表 + POSIX tail） | ✅ 已完成（2026-10-21） |
 | M3 | 墙钟窗口 `windows`（含 `--all`） | ✅ 已完成（2026-10-21） |
-| M4 | 版本差异分类 `diff` | ⬜ |
+| M4 | 版本差异分类 `diff` | ✅ 已完成（2026-10-21） |
 | M5 | 清单审计 `audit` + 报告门禁 | ⬜ |
 | M6 | 发布：tag + Release + 发布留档 | ⬜ |
 
