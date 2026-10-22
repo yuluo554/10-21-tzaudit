@@ -1,6 +1,6 @@
 # tzaudit · 时区数据版本漂移审计
 
-> **v0.1.0.dev0** — 本地 CLI，运行时**零网络**、**零第三方依赖**、**零遥测**。
+> **v0.1.0** — 本地 CLI，运行时**零网络**、**零第三方依赖**、**零遥测**。
 > 状态：**五个子命令全部落地**（`version` / `windows` / `diff` / `audit` / `report`）。
 > 交付面含五版本真实 provenance、五套件金标复算入口、TZif 解析器、POSIX tail 解析器、
 > 表+tail 合并与本地反解、墙钟窗口、四类版本差异分类、清单审计与报告门禁。
@@ -36,7 +36,7 @@
 
 ```bash
 py -3.12 -m pip install -e ".[dev]"      # 开发安装
-tzaudit --version                         # tzaudit 0.1.0.dev0
+tzaudit --version                         # tzaudit 0.1.0
 tzaudit --help
 ```
 
@@ -146,9 +146,12 @@ tzaudit diff --old <tree-2026a> --new <tree-2026e> --zone America/Vancouver
 ### 3. 清单审计（不接 cron 表达式）✅ 已可用
 
 ```bash
-printf 'id,local_time\ncase-001,2026-03-08 02:30\ncase-002,2026-11-01 01:30\ncase-003,2026-06-01 12:00\n' > times.csv
+printf 'case-001,2026-03-08 02:30\ncase-002,2026-11-01 01:30\ncase-003,2026-06-01 12:00\n' > times.csv
 tzaudit audit --times times.csv --zone America/New_York --zoneinfo <tree> --json
 ```
+
+> 清单是**两列 `id,local_time`、无表头**；一行一个时间戳也可以（自动 `line-001`）。
+> `INVALID` 行不静默跳过，所以写表头会被当成坏行（整体退 4）——这是有意的。
 
 ```text
 case-001  GAP      2026-03-08 02:30:00  —                         0 个 UTC 候选（该墙钟不存在）
@@ -256,7 +259,7 @@ py -3.12 tools/check-desensitized.py               # 脱敏门
 | M3 | 墙钟窗口 `windows`（含 `--all`） | ✅ 已完成（2026-10-21） |
 | M4 | 版本差异分类 `diff` | ✅ 已完成（2026-10-21） |
 | M5 | 清单审计 `audit` + 报告门禁 | ✅ 已完成（2026-10-22） |
-| M6 | 发布：tag + Release + 发布留档 | ⬜ |
+| M6 | 发布：tag + Release + 发布留档 | ✅ 已完成（2026-10-22） |
 
 ## 许可
 

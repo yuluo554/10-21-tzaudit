@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "tzaudit"
-version = "0.1.0.dev0"
+version = "0.1.0"
 description = "本地时区数据版本漂移审计：墙钟风险窗口、版本差异分类、清单判定"
 readme = "README.md"
 requires-python = ">=3.8"

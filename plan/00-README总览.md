@@ -24,7 +24,7 @@
 | `plan/06-交付对标与决策.md` | 题面 §二/§三逐条落位、缺口表、待定决策表、发布前检查清单 | ✅ v1（M0） |
 | `plan/HANDOFF-M1.md` | M0 收尾交接单（七节）：M1 待办 / K 口径 / 环境坑 / DoD / 命令速查 | ✅ v1（M0） |
 | `plan/HANDOFF-M4.md` | M3 收尾交接单（七节）：M4 待办 / K 口径 / 环境坑 / DoD / 命令速查 | ✅ v1（M3） |
-| `plan/RELEASE-M6.md` | 发布留档（tag 时点事实 / tag 后追加事实分栏） | ⬜ 待 M6 |
+| `plan/RELEASE-M6.md` | 发布留档（tag 时点事实 / tag 后追加事实分栏） | ✅ M6（两栏 + 阶段 7 覆盖对账） |
 
 > 索引状态列随里程碑同步翻转；不得在一处标 ✅ 而在另一处标 ⬜。
 
@@ -103,9 +103,9 @@
 | `--fail-on` 门禁语义 | `data/README.md` §四单点定义 | `report` 退出码 | 四组退出码测试（无命中/gap/overlap/history） | ✅ M5（四组各一条；`--json` 与 Markdown 退出码相同；非法枚举退 2；只看结果集不看人读文本） |
 | 五版本金标可复算 | 2026a–2026e（✅ 实拉） | `bench/run.py` → `data/tzdb/*/expect.json` | 干净环境重跑一致 | ✅ M1（5 版本 × 598 zone 零解析错误；`--check` 退 0） |
 | fixture 可重建 | 生成脚本固定输入 | `data/fixtures/**/gen.py` | `--check` 重生成逐字节一致 | 6 组已落地并带 `--check`（`tzif/slim-vs-fat`、`tzif/source-vs-wheel`、`posix/three-rule-forms`、`windows/wall-clock-windows`、`diff/change-classes`、**`audit/bc-scenario`**） |
-| 零网络 / 零遥测 | — | 全部子命令 | 断网跑通；代码内无 HTTP 客户端 | ⬜ 待 M6 |
-| README 四场景复现 | — | `README.md` | 干净 clone 按 README 跑通 | ⬜ 待 M6 |
-| 发布三件套 | — | tag / Release 附产物 / `plan/RELEASE-M6.md` | tag 树内含留档；Release 有附件 + 本地副本 + sha256 | ⬜ 待 M6 |
+| 零网络 / 零遥测 | — | 全部子命令 | 断网跑通；代码内无 HTTP 客户端 | ✅ M6（`socket` 五个入口打桩抛 `NetworkBlocked`：`windows` / `diff` / `audit` / `report` 全通；`netstat -ano` 逐子进程采样，属该 PID 的 `ESTABLISHED`/`SYN_SENT` 行数 = 0；证据见 `plan/RELEASE-M6.md` §1.5） |
+| README 四场景复现 | — | `README.md` | 干净 clone 按 README 跑通 | ✅ M6（`git archive` 解包到临时目录 + 新建 venv；前置三步 `fetch`/`--check`/`bench --check` 与四场景逐条实跑；证据见 `plan/RELEASE-M6.md` §1.4） |
+| 发布三件套 | — | tag / Release 附产物 / `plan/RELEASE-M6.md` | tag 树内含留档；Release 有附件 + 本地副本 + sha256 | 🟡 留档已落盘；tag 与 Release 待打 |
 
 ## 提交材料实物表（plan/01 §三 逐项落位）
 
@@ -133,7 +133,7 @@
 | M3 | **墙钟窗口表 `windows`** | America/New_York 2026 两窗口方向正确；**Vancouver 2026 零误报**；负 DST / 30 分钟 / 非整点三 zone 金标；`--all --year` 可跑完 | ✅ 已完成（2026-10-21） |
 | M4 | **版本差异分类 `diff`** | 四类互斥且顺序固定；Vancouver → `future_rule`（`evidence=tail`）；Dublin 1925 / Tehran 1979 → `history_reinterpreted`；2026a↔2026e 名单与金标一致 | ✅ 已完成（2026-10-21） |
 | M5 | **清单审计 `audit` + 报告门禁** | 四类判定各一条；BC 场景"同一 UTC 两版本两墙钟"复现；报告头三字段；`--fail-on` 四组退出码测试 | ✅ 已完成（2026-10-22） |
-| M6 | 发布 | **git tag（`v0.1.0`）+ GitHub Release（附产物：手工源码包，本地留副本 + sha256）+ 发布留档 `plan/RELEASE-M6.md`（tag 前落盘、tag 后分栏追加）**；干净环境按 README 跑通四场景；断网跑通；提交面脱敏（含 tag tagger 邮箱）；发布 GitHub **公开仓库** | ⬜ |
+| M6 | 发布 | **git tag（`v0.1.0`）+ GitHub Release（附产物：手工源码包，本地留副本 + sha256）+ 发布留档 `plan/RELEASE-M6.md`（tag 前落盘、tag 后分栏追加）**；干净环境按 README 跑通四场景；断网跑通；提交面脱敏（含 tag tagger 邮箱）；发布 GitHub **公开仓库** | ✅ 已完成（2026-10-22） |
 
 > **M6 DoD 口径 = A）"Release 附产物"**：至少 1 个手工上传附件（`git archive` + `gzip -9n` + `SHA256SUMS`），本地留副本并记录 sha256。里程碑表的 DoD 列**只能加不能减**；要减必须在决策记录留一行理由。
 
