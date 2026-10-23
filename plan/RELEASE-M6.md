@@ -180,6 +180,18 @@ PYTHONPATH=/tmp/netguard <python> -m tzaudit report ... --fail-on overlap     # 
 **教训**：本地有 `data/_downloads` 会掩盖"无数据环境"的分支——CI 等价环境必须本地复现过。
 修复后本地无 `data/_downloads` 复现：3.12 = 363 passed / 72 skipped，3.8 = 363 passed / 72 skipped。
 
+### 2.3 runner 镜像与 actions 版本（M6.1，2026-10-23 实测）
+
+| 项 | 值 | 证据 |
+|---|---|---|
+| `ubuntu-latest` 实际指向 | 尚未固定到 Ubuntu 26；GitHub 注解：**"The `ubuntu-latest` label will migrate to Ubuntu 26 beginning October 19, 2026."** | job annotations（notice） |
+| `actions/checkout` 最新 | **v7.0.1**（原用 `@v4`，吃 Node20 弃用 warning） | `gh api repos/actions/checkout/releases/latest --jq .tag_name` |
+| `actions/setup-python` 最新 | **v7.1.0**（原用 `@v5`，同上） | `gh api repos/actions/setup-python/releases/latest --jq .tag_name` |
+
+**处置**：`ci.yml` 两处 `checkout@v4 → @v7`、两处 `setup-python@v5 → @v7`（M6.1 批 4），消除 Node20 弃用注解。
+`ubuntu-latest` 的 Ubuntu 26 迁移 notice 属 GitHub 侧排期：本仓 4 格矩阵（`ubuntu/windows × 3.8/3.12`）
+**在迁移生效后需重跑确认**——M6.1 的 CI 轮次结论以实跑 run 为准，见 `plan/RELEASE-M6.1.md`。
+
 ### 阶段 7 覆盖对账
 
 > 三态：**实现**（tag 树里有实物且可复验）/ **不适用**（本轮明确不做，附理由）/ **待首推**（本地无法验证）。

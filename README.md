@@ -1,6 +1,6 @@
 # tzaudit · 时区数据版本漂移审计
 
-> **v0.1.0** — 本地 CLI，运行时**零网络**、**零第三方依赖**、**零遥测**。
+> **v0.1.1** — 本地 CLI，运行时**零网络**、**零第三方依赖**、**零遥测**。
 > 状态：**五个子命令全部落地**（`version` / `windows` / `diff` / `audit` / `report`）。
 > 交付面含五版本真实 provenance、五套件金标复算入口、TZif 解析器、POSIX tail 解析器、
 > 表+tail 合并与本地反解、墙钟窗口、四类版本差异分类、清单审计与报告门禁。
@@ -36,7 +36,7 @@
 
 ```bash
 py -3.12 -m pip install -e ".[dev]"      # 开发安装
-tzaudit --version                         # tzaudit 0.1.0
+tzaudit --version                         # tzaudit 0.1.1
 tzaudit --help
 ```
 
@@ -67,6 +67,31 @@ py -3.12 bench/run.py --check
 ```
 
 > **"0 项通过"与"没扫到"必须可区分**——这条是本项目所有门的共同纪律。
+
+### 金标复算在哪里跑（本地 vs CI，据实标注）
+
+**金标复算是开发机门，CI 上跑不到**——因为 `data/_downloads/` 不入仓（需联网拉约 4 MB），
+CI 的干净 checkout 里没有它。所以 CI 上 **72 条金标测试全部 `SKIP`**：
+
+| 条件 | 全量测试 | 说明 |
+|---|---|---|
+| **本地**（已跑 `fetch_tzdb.py`，有 `data/_downloads`） | **435 collected → 434 passed + 1 skipped** | 那 1 skip = `tests/test_timeline.py`「本机无 `zic`，fat 真实树不可得」（语义等价已由 `data/fixtures/tzif/slim-vs-fat` 覆盖） |
+| **CI 等价**（无 `data/_downloads`） | **363 passed + 72 skipped** | 与 `plan/RELEASE-M6.md` §1.7 登记**逐字一致**（363 / 72 = 435 − 72） |
+
+⇒ **判据 `435 = 363 + 72`**：CI 的绿只证明 363 条；剩下 72 条金标**只在本地跑过**。
+自己复验两条件：
+
+```bash
+# (a) CI 等价条件：git archive 解出的树不含 gitignored 的 data/_downloads
+git archive HEAD | tar x -C /tmp/tzaudit-ci && cd /tmp/tzaudit-ci
+py -3.12 -m pip install -e ".[dev]" && py -3.12 -m pytest -o addopts=""     # 363 passed, 72 skipped
+
+# (b) 本地金标条件（先跑 fet，见上）——CI 里那 72 条在这跑
+py -3.12 bench/run.py --check --suite parse      # 逐套件，rc=0；全量 --check 需 30–50 分钟
+```
+
+CI 里另有一条**常驻门**守住本项目最核心的纪律：干净 checkout 上 `bench/run.py --check`
+**必须退 3**（点名缺件、明写"不是 0 项通过"），**绝不静默报"0 项通过"**。
 
 产出落在 `data/_downloads/`（已 gitignore）：
 

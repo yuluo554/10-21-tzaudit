@@ -23,7 +23,7 @@ import sys
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
-SKIP_DIRS = {".git", "__pycache__", ".pytest_cache", ".venv", "venv", "node_modules", "bench/out"}
+SKIP_DIRS = {".git", "__pycache__", ".pytest_cache", ".venv", "venv", "node_modules", "bench/out", "update"}
 SKIP_FILES = {os.path.join(ROOT, "tools", "check-desensitized.py")}
 TEXT_EXT = {
     ".md", ".py", ".toml", ".yml", ".yaml", ".json", ".txt", ".cfg", ".ini",

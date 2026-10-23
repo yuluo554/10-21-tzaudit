@@ -12,8 +12,8 @@ jobs:
     name: "layout + desensitization gates"
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
         with:
           python-version: "3.12"
       - name: "Sprint layout gate (methodology binding)"
@@ -32,8 +32,8 @@ jobs:
     env:
       PYTHONUTF8: "1"
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
         with:
           python-version: ${{ matrix.python }}
       - name: "Install (editable + dev)"
@@ -44,3 +44,20 @@ jobs:
         run: |
           python -m tzaudit --help
           python -m tzaudit --version
+      - name: "Bench discipline: missing data must exit 3 (never a silent '0 项通过')"
+        shell: bash
+        run: |
+          # GitHub 的 `shell: bash` 默认带 -e：必须先关掉，否则期望中的 rc=3 会直接把步骤判红。
+          set +e
+          set -o pipefail
+          out="bench-out.txt"
+          python bench/run.py --check > "$out" 2>&1
+          rc=$?
+          echo "rc=$rc"
+          cat "$out"
+          # CI 上没有 data/_downloads ⇒ 必须退 3，且逐条点名缺件、明写"不是 0 项通过"。
+          test "$rc" -eq 3 || { echo "FAIL: 期望 rc=3，实得 $rc"; exit 1; }
+          grep -q "缺件" "$out" || { echo "FAIL: 输出未点名缺件"; exit 1; }
+          grep -q "不是" "$out" || { echo "FAIL: 输出未声明'不是 0 项通过'"; exit 1; }
+          grep -q "0 项通过" "$out" || { echo "FAIL: 输出未提及'0 项通过'"; exit 1; }
+          rm -f "$out"

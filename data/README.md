@@ -120,6 +120,25 @@
 
 > **运行时零网络**：CLI 不下载任何东西。用户在本地提供 zoneinfo 树或解包后的 tzdata 目录（`--zoneinfo` / `--version`）。
 
+### 2.1 tzdata 版本纳入纪律（`next_review`）
+
+本仓依赖**外部持续发布的数据**（IANA tzdata 一年发多个版本，2026 年内已到 **2026e**）。
+当前 `data/tzdb/` 覆盖 **2026a–2026e**（5 个版本）。**新增一个版本必须同轮做完**：
+
+1. `provenance.json`：`version` / `kind` / `source_url` / `sha256`（实测，非推断）/ `zones`（实测回填）/ `retrieved`；
+2. `NEWS`：该版本发布说明的**首版块**逐字摘录（往回改历史的句子必须原样在仓里）；
+3. **3 件金标**：`expect.json`（由 `bench/run.py --regen` 从真树产出）+ 对应套件金标（`windows` / `diff` / `audit` 视影响面）；
+4. 更新 `plan/RELEASE-M6.md`（及后续版）的版本表与阶段 7 覆盖对账。
+
+**复核锚**（机读）：
+```
+next_review: 2026-11-30
+review_interval: 每季度一次；或 IANA 新版本发布后 7 天内
+```
+> **为什么需要它**：IANA 持续发布 ⇒ 六个版本之后 `data/tzdb/` 会悄悄变成历史快照而无人知道。
+> 上两者任一到点，本仓应复核「是否有新版本需要纳入」并更新本表。这是**声明式**承诺
+> （没有代码门强制它；复核时以本行为 checklist）。
+
 ---
 
 ## 三、合成数据纪律
