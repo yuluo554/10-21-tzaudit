@@ -112,16 +112,65 @@
 
 ### 2.0 tag 与 Release
 
-*（本版发布后补记）*
+| 项 | 值 |
+|---|---|
+| tag | `v0.1.1`（annotated） |
+| tag 对象 OID | `e2d34972fd1bfb2c1956f22fe253cbb5ddaf2514` |
+| 指向 commit | `5593424fd31dd86f1e79e44bf43cb69412062769`（= `main` HEAD） |
+| tag 消息 | `tzaudit v0.1.1：M6.1 二次迭代（变异门 V9 靶子失效修复 + CI 缺件纪律 + 发布面补全）` |
+| tagger | `yuluo554 <282769740+yuluo554@users.noreply.github.com>` |
+| Release | `v0.1.1`，**draft=false / prerelease=false / latest=true** |
+| Release URL | <https://github.com/yuluo554/10-21-tzaudit/releases/tag/v0.1.1> |
+| tag 后提交 | **0 个**（tag 即 `main` HEAD，无滞后） |
+| `v0.1.0` | **未动**（annotated `e770c42e` → `d05fb8d` 保持原样） |
+| 复验命令 | `git rev-parse v0.1.1 v0.1.1^{commit}`；`curl -s https://api.github.com/repos/yuluo554/10-21-tzaudit/releases/latest` |
 
 ### 2.1 附件与复核
 
-*（本版发布后补记）*
+| 项 | 值 |
+|---|---|
+| 附件 1 | `10-21-tzaudit-v0.1.1.tar.gz`（378253 B） |
+| 附件 2 | `SHA256SUMS`（94 B） |
+| 附件 1 sha256 | `afd3b6c8213d09ae3aacbca4761d5647574f3925e5d5ba75c16c1e42456b88eb` |
+| 附件 2 sha256 | `4a057e9b1e1e9f389d6962e7bae8cc437c93a1e583df4b439c2f7bd72fa6ee36` |
+| 构建命令 | `git archive --format=tar --prefix=10-21-tzaudit-0.1.1/ v0.1.1 \| gzip -9n` |
+| `gzip -9n` 确定性 | 同一条命令重建两次 → `cmp` 逐字节一致 |
+| 本地副本 | 仓库外 `dist-release/`（不入仓，已 gitignore） |
+| 匿名下载 | `curl -sL` 两份附件（**不带 token**）→ `sha256sum -c SHA256SUMS` → **OK**；HTTP **200** |
+| 三方一致 | 本地构建 sha256 = 匿名下载 sha256 = GitHub API `digest`（`sha256:afd3b6c8…`） |
+| 解包树版本 | `pyproject.toml:7` = `0.1.1`、`src/tzaudit/__init__.py:7` = `0.1.1` |
+| 解包树门 | 解包后 `check-sprint-layout.py` / `check-desensitized.py` 均**退 0** |
+| tag 树内文件 | **161** 份（`git ls-tree -r v0.1.1 --name-only`）；附件条目 210（161 文件 + 49 目录） |
+| `git diff --name-only v0.1.0..v0.1.1` | `ci.yml` / `.gitignore` / `AGENTS.md` / `README.md` / `data/README.md` / `plan/00` / `plan/05` / `plan/06` / `plan/HANDOFF-M1.md` / `plan/RELEASE-M6.md` / `plan/RELEASE-M6.1.md` / `pyproject.toml` / `src/tzaudit/__init__.py` / `tools/check-desensitized.py` / `tools/mutate-layout-gate.py`（15 项；**交付面只有版本号 2 处 + 两个门脚本**，判定逻辑 `src/tzaudit/**` 未动） |
 
 ### 2.2 CI 实跑结论
 
-*（本版 push 后补记；含 run 编号、5/5 或 6/6 job 结论、Node20 注解计数）*
+| run | 事件 | 分支 / tag | head sha | 结论 | 说明 |
+|---|---|---|---|---|---|
+| #9 | push | `main` | `c7dd967` | **success** | M6.1 主要改动（D1/D2/D3/D5）；5/5 job success；**含 D2 新增的 `Bench discipline` 步骤 ×4 矩阵全 success** |
+| #10 | push | `v0.1.1`（tag） | `5593424` | **success** | tag run；5/5 job success |
+
+> 复验命令：`gh api repos/yuluo554/10-21-tzaudit/actions/runs --jq '.workflow_runs[] |
+> "\(.run_number)\t\(.event)\t\(.head_branch)\t\(.head_sha[0:7])\t\(.conclusion)"'`
+
+**注解**：Node20 弃用注解 **0 条**（`checkout@v4`/`setup-python@v5 → @v7`，D3 生效）；
+`ubuntu-latest` → Ubuntu 26 迁移 notice **3 条**（GitHub 侧排期，非本仓可控；见 `plan/RELEASE-M6.md` §2.3）。
 
 ### 2.3 阶段 7 覆盖对账（M6.1）
 
-*（本版发布后补记）*
+> 三态：**实现**（tag 树里有实物且可复验）/ **不适用**（本轮明确不做，附理由）/ **待首推**（本地无法验证）。
+
+| # | 阶段 7 项 | 三态 | 证据 / 复验 |
+|---|---|---|---|
+| 1 | 版本号三处一致（`0.1.1`） | 实现 | §1.1；`git show v0.1.1:pyproject.toml` 与 `src/tzaudit/__init__.py` 均 `0.1.1`；README 首屏 `v0.1.1` |
+| 2 | 变异门恢复 10/10（D1） | 实现 | §1.4；本地 `tools/mutate-layout-gate.py` → `10/10 组按预期` rc=0；两组负控实测 |
+| 3 | 脱敏门绿（含 `update/` 跳过） | 实现 | §1.6；本地退 0；tag 树解包后退 0 |
+| 4 | 布局门绿（10 条判据） | 实现 | §1.3；本地退 0；tag 树解包后退 0 |
+| 5 | CI 接「缺件退 3」常驻门（D2） | 实现 | §2.2 run #9/#10：`Bench discipline` 步骤在 4 个 pytest 矩阵全 success |
+| 6 | README 据实标注金标在本地/CI 差异（D5） | 实现 | §1.7；README 首屏「金标复算在哪里跑」表（435 vs 363+72） |
+| 7 | actions 升 v7 + Node20 注解清零（D3） | 实现 | §2.2；注解计数 **0** |
+| 8 | GitHub description + topics（D4） | 实现 | `gh repo view --json description,repositoryTopics` → description 非空 + 4 topics |
+| 9 | tzdata 版本纳入纪律 + next_review（D9） | 实现 | `data/README.md` §2.1（`next_review: 2026-11-30`） |
+| 10 | 发布三件套（tag / Release 附件 / 留档） | 实现 | §2.0 + §2.1 |
+| 11 | 金标在 CI 跑 | **不适用** | CI 上无 `data/_downloads`（不入仓，需联网拉约 4 MB）⇒ 72 条金标测试全部 `SKIP`；这是**有意的口径**（体积 + 联网 + URL 失效风险），已在 README 与 §1.7 登记，并以「缺件必退 3」常驻门兜住纪律（DEC-2 乙+丙案） |
+| 12 | 变异门进 CI | **本轮不做** | 本迭代只把「缺件退 3」进 CI；变异门仍在开发机跑（`.github/workflows/ci.yml` 无 `mutate-layout-gate` 步骤）。用户 DEC-2 选项均针对金标，未授权加变异 job —— **留作下一轮候选** |
