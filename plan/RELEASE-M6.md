@@ -155,6 +155,11 @@ PYTHONPATH=/tmp/netguard <python> -m tzaudit report ... --fail-on overlap     # 
 
 ### 2.2 CI 实跑结论（逐条配对；失败轮次照录，不抹除）
 
+**口径**：本表登记到 `v0.1.0` 发布链路上的**关键轮次**。tag 之后只有 `plan/` 文档的
+收尾提交，**每一轮都实测为 success**（同样是 5/5 job：`layout + desensitization gates` +
+`pytest {ubuntu,windows} × {3.8,3.12}`）；它们不改交付面，故不逐轮登记条数
+（条数随文档修订滚动，写死必失效）。
+
 | run | 事件 | 分支 / tag | head sha | 结论 | 说明 |
 |---|---|---|---|---|---|
 | #1 | push | `main` | `f06d9e8` | **failure** | 首推即红：4 个 pytest 矩阵全红，`layout + desensitization gates` 绿 |
@@ -162,7 +167,10 @@ PYTHONPATH=/tmp/netguard <python> -m tzaudit report ... --fail-on overlap     # 
 | #3 | push | `v0.1.0`（tag） | `d05fb8d` | **success** | tag run；5/5 job success |
 | #4 | push | `main` | `35b0d43` | **success** | tag 后留档提交（附件副本移出版本控制）；5/5 job success |
 | #5 | push | `main` | `f3c9758` | **success** | 留档修正（G5 改写 + 提交集合实测）；5/5 job success |
-| #6 | push | `main` | `a63e13f` | **success** | 收尾（CI 五轮配对补记）；5/5 job success |
+| #6 | push | `main` | `a63e13f` | **success** | 收尾（CI 轮次配对补记）；5/5 job success |
+
+> 复验命令：`gh api repos/yuluo554/10-21-tzaudit/actions/runs --jq '.workflow_runs[] |
+> "\(.run_number)\t\(.event)\t\(.head_branch)\t\(.head_sha[0:7])\t\(.conclusion)"'`
 
 **#1 的红因（据实记录）**：`tests/test_audit.py::test_invalid_is_decided_before_gap` 在缺
 `data/_downloads/slim` 时退回到 `bc-scenario` 的旧树，却仍按 `America/New_York` 取 zone ——
