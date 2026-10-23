@@ -121,7 +121,7 @@
 | tagger | `yuluo554 <282769740+yuluo554@users.noreply.github.com>` |
 | Release | `v0.1.1`，**draft=false / prerelease=false / latest=true** |
 | Release URL | <https://github.com/yuluo554/10-21-tzaudit/releases/tag/v0.1.1> |
-| tag 后提交 | **0 个**（tag 即 `main` HEAD，无滞后） |
+| tag 后提交 | **仅留档追加**（`plan/RELEASE-M6.1.md` §二；不写死滚动条数——见 `plan/RELEASE-M6.md` §2.2 口径）；`v0.1.1` 之后的提交**不改交付面** |
 | `v0.1.0` | **未动**（annotated `e770c42e` → `d05fb8d` 保持原样） |
 | 复验命令 | `git rev-parse v0.1.1 v0.1.1^{commit}`；`curl -s https://api.github.com/repos/yuluo554/10-21-tzaudit/releases/latest` |
 
@@ -149,6 +149,7 @@
 |---|---|---|---|---|---|
 | #9 | push | `main` | `c7dd967` | **success** | M6.1 主要改动（D1/D2/D3/D5）；5/5 job success；**含 D2 新增的 `Bench discipline` 步骤 ×4 矩阵全 success** |
 | #10 | push | `v0.1.1`（tag） | `5593424` | **success** | tag run；5/5 job success |
+| #11 | push | `main` | `98908be` | **success** | tag 后留档追加（`RELEASE-M6.1.md` §二）；5/5 job success |
 
 > 复验命令：`gh api repos/yuluo554/10-21-tzaudit/actions/runs --jq '.workflow_runs[] |
 > "\(.run_number)\t\(.event)\t\(.head_branch)\t\(.head_sha[0:7])\t\(.conclusion)"'`
