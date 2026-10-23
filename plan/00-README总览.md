@@ -105,7 +105,7 @@
 | fixture 可重建 | 生成脚本固定输入 | `data/fixtures/**/gen.py` | `--check` 重生成逐字节一致 | 6 组已落地并带 `--check`（`tzif/slim-vs-fat`、`tzif/source-vs-wheel`、`posix/three-rule-forms`、`windows/wall-clock-windows`、`diff/change-classes`、**`audit/bc-scenario`**） |
 | 零网络 / 零遥测 | — | 全部子命令 | 断网跑通；代码内无 HTTP 客户端 | ✅ M6（`socket` 五个入口打桩抛 `NetworkBlocked`：`windows` / `diff` / `audit` / `report` 全通；`netstat -ano` 逐子进程采样，属该 PID 的 `ESTABLISHED`/`SYN_SENT` 行数 = 0；证据见 `plan/RELEASE-M6.md` §1.5） |
 | README 四场景复现 | — | `README.md` | 干净 clone 按 README 跑通 | ✅ M6（`git archive` 解包到临时目录 + 新建 venv；前置三步 `fetch`/`--check`/`bench --check` 与四场景逐条实跑；证据见 `plan/RELEASE-M6.md` §1.4） |
-| 发布三件套 | — | tag / Release 附产物 / `plan/RELEASE-M6.md` | tag 树内含留档；Release 有附件 + 本地副本 + sha256 | 🟡 留档已落盘；tag 与 Release 待打 |
+| 发布三件套 | — | tag / Release 附产物 / `plan/RELEASE-M6.md` | tag 树内含留档；Release 有附件 + 本地副本 + sha256 | ✅ M6（tag `v0.1.0`（annotated，tagger 为 noreply）+ Release 两附件；回下载 `cmp` 逐字节一致、`sha256sum -c` OK；tag 树与附件解包树 160/160 份逐字节相等；字面值见 `plan/RELEASE-M6.md` §2.0 / §2.1） |
 
 ## 提交材料实物表（plan/01 §三 逐项落位）
 

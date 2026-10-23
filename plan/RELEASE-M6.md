@@ -101,12 +101,14 @@ PYTHONPATH=/tmp/netguard <python> -m tzaudit report ... --fail-on overlap     # 
 
 ### 1.7 测试与金标
 
-| 通道 | 命令 | 期望 |
+| 通道 | 命令 | 实测（2026-10-22，本机） |
 |---|---|---|
-| 3.12 | `py -3.12 -m pytest` | 全绿（`-q` 已在 `addopts`，**不要**再传 `-q`） |
-| 3.8 | `py -3.8 -m pytest` | 全绿，与 3.12 同数 |
-| 金标 | `py -3.12 bench/run.py --check` | 退 0，分母 > 0，`不一致: 0` |
+| 3.12 | `py -3.12 -m pytest` | **434 passed, 1 skipped**（2872.15 s ≈ 47 分 52 秒） |
+| 3.8 | `py -3.8 -m pytest` | **434 passed, 1 skipped**（2980.50 s ≈ 49 分 40 秒）；与 3.12 同数 |
+| 金标 | `py -3.12 bench/run.py --check` | 退 0，分母 **7**，`不一致: 0` |
+| CI 等价（无 `data/_downloads`） | `py -3.12` / `py -3.8 -m pytest` | **363 passed, 72 skipped** ×2 通道，均退 0 |
 
+> `-q` 已在 `addopts`，**不要**再传 `-q`（会变 `-qq` 而不打印汇总行）。
 > **必须串行**：`bench/run.py --check` 与 pytest 并发会读到半写金标而假红；
 > 跑测试期间也不得切换提交 / stash / 还原工作树（见 `plan/HANDOFF-M6.md` §5）。
 
@@ -123,26 +125,49 @@ PYTHONPATH=/tmp/netguard <python> -m tzaudit report ... --fail-on overlap     # 
 ## 二、tag 后追加
 
 > 本节写于 tag 之后，**不随 tag 树发布**（tag 树里只有 §一）。
+> 自指的值（tag OID、指向的 commit、附件 sha256、run 编号）只出现在这里。
 
-（tag 与 Release 完成后补记：tag 对象 OID、tag 指向的 commit、附件文件名与 sha256、Release URL、
-CI run 结论、阶段 7 覆盖对账。）
+### 2.0 tag 与 Release
+
+| 项 | 值 |
+|---|---|
+| tag | `v0.1.0`（annotated） |
+| tag 对象 OID | `e770c42efbef9f3e5562746cdfcbb92191e3e16b` |
+| tag 指向的 commit | `d05fb8d83e243df07f9154854cdd1da10c839591` |
+| tagger | `yuluo554 <282769740+yuluo554@users.noreply.github.com>` |
+| Release URL | https://github.com/yuluo554/10-21-tzaudit/releases/tag/v0.1.0 |
+| 仓库 | https://github.com/yuluo554/10-21-tzaudit （public） |
 
 ### 2.1 附件与复核
 
 | 项 | 值 |
 |---|---|
-| 附件 | 待补记 |
-| sha256 | 待补记 |
-| 回下载 `cmp` | 待补记 |
-| 解包树 vs `git archive` 树 | 待补记 |
-| tag 后提交集合是否 ⊆ 非交付面 | 待补记 |
+| 附件 1 | `10-21-tzaudit-v0.1.0.tar.gz`（369728 B） |
+| 附件 2 | `SHA256SUMS`（94 B） |
+| sha256 | `55d2d7c6e063954bc2fbef876d3631040e805cc9711b0d701379e9ecbc501fad` |
+| 构建命令 | `git archive --format=tar --prefix=10-21-tzaudit-0.1.0/ v0.1.0 \| gzip -9n` |
+| `gzip -9n` 确定性 | 同一条命令重建两次 → `cmp` 逐字节一致 |
+| 本地副本 | 仓库外 `dist-release/`（不入仓；**不写进 `.gitignore` 之外的位置**） |
+| 回下载 `cmp` | `gh release download v0.1.0` 取回两份附件 → 与本地副本 `cmp` **逐字节一致**；`sha256sum -c SHA256SUMS` → **OK** |
+| 解包树 vs `git archive` 树 | 附件解包 **160** 份 / tag 树 **160** 份；**共有且逐字节相等 160**、内容不同 **0**、仅附件侧 **0**、仅 tag 树侧 **0** |
+| tag 后提交集合 | `git log v0.1.0..HEAD` **为空**（tag 处即交付面；后续留档提交只动 `plan/`） |
+| tag 树内含留档 | `git cat-file -e v0.1.0:plan/RELEASE-M6.md` → 通过 |
 
-### 2.2 CI 实跑结论
+### 2.2 CI 实跑结论（逐条配对；失败轮次照录，不抹除）
 
-| 事件 | run | 结论 |
-|---|---|---|
-| 首推 `main` | 待补记 | 待补记 |
-| `v*` tag | 待补记 | 待补记 |
+| run | 事件 | 分支 / tag | head sha | 结论 | 说明 |
+|---|---|---|---|---|---|
+| #1 | push | `main` | `f06d9e8` | **failure** | 首推即红：4 个 pytest 矩阵全红，`layout + desensitization gates` 绿 |
+| #2 | push | `main` | `d05fb8d` | **success** | 修 CI 红因后重推；5/5 job success |
+| #3 | push | `v0.1.0`（tag） | `d05fb8d` | **success** | tag run；5/5 job success |
+
+**#1 的红因（据实记录）**：`tests/test_audit.py::test_invalid_is_decided_before_gap` 在缺
+`data/_downloads/slim` 时退回到 `bc-scenario` 的旧树，却仍按 `America/New_York` 取 zone ——
+该 fixture 树里只有 `Zone/Bc`。本地因为有 slim 树（跑过 `fetch_tzdb`）而恒绿，CI 是干净 clone
+（没有 downloads）所以四矩阵全红。修法：按树选 zone（有真实树用 `America/New_York`，
+无真实树用 `Zone/Bc`，后者在 `2026-03-08 02:30` 同样有 GAP 段），断言不变。
+**教训**：本地有 `data/_downloads` 会掩盖"无数据环境"的分支——CI 等价环境必须本地复现过。
+修复后本地无 `data/_downloads` 复现：3.12 = 363 passed / 72 skipped，3.8 = 363 passed / 72 skipped。
 
 ### 阶段 7 覆盖对账
 
@@ -151,11 +176,14 @@ CI run 结论、阶段 7 覆盖对账。）
 
 | # | 阶段 7 项 | 三态 | 证据 / 复验 |
 |---|---|---|---|
-| 1 | 版本号三处一致（`0.1.0`） | 实现 | §1.1 |
-| 2 | 干净环境四场景 | 实现 | §1.4 |
-| 3 | 断网跑通四子命令 | 实现 | §1.5 |
-| 4 | 脱敏门绿 | 实现 | §1.6 |
+| 1 | 版本号三处一致（`0.1.0`） | 实现 | §1.1；`git show v0.1.0:src/tzaudit/__init__.py` 与 `pyproject.toml` 均为 `0.1.0` |
+| 2 | 干净环境四场景 | 实现 | §1.4（`git archive` 解包树 + 新建 venv 逐条实跑） |
+| 3 | 断网跑通四子命令 | 实现 | §1.5（`socket` 五入口打桩；`netstat -ano` 逐 PID 采样零连接） |
+| 4 | 脱敏门绿 | 实现 | §1.6（4 条规则；CI run #2/#3 的 `layout + desensitization gates` job 亦绿） |
 | 5 | 退出码 5 整项退役 | 实现 | `grep -r EXIT_NOT_READY src/` **为空**（M5 退役的发布门证据） |
-| 6 | 五套件金标 `--check` 退 0 | 实现 | `py -3.12 bench/run.py --check` → 退 0、`不一致: 0` |
-| 7 | 发布三件套（tag / Release 附件 / 留档） | 实现 | §2.1 |
-| 8 | CI 实跑与跨平台 | 待首推 | §2.2 |
+| 6 | 五套件金标 `--check` 退 0 | 实现 | `py -3.12 bench/run.py --check` → 退 0、`不一致: 0`（分母 7） |
+| 7 | 六组 fixture 生成器 `--check` | 实现 | 六组全 PASS（`audit` 6 / `diff` 17 / `windows` 7 / `slim-vs-fat` 4 / `source-vs-wheel` 13 / `posix` 1 份产物） |
+| 8 | 发布三件套（tag / Release 附件 / 留档） | 实现 | §2.0 + §2.1 |
+| 9 | CI 实跑与跨平台（4 矩阵 × 2 OS） | 实现 | §2.2：run #2 / #3 全绿，含 `ubuntu-latest` 与 `windows-latest` × `3.8` / `3.12` |
+| 10 | 首推失败轮次留档 | 实现 | §2.2：run #1 红因与修法逐条记录，未抹除 |
+
