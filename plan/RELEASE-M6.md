@@ -150,7 +150,7 @@ PYTHONPATH=/tmp/netguard <python> -m tzaudit report ... --fail-on overlap     # 
 | 本地副本 | 仓库外 `dist-release/`（不入仓；**不写进 `.gitignore` 之外的位置**） |
 | 回下载 `cmp` | `gh release download v0.1.0` 取回两份附件 → 与本地副本 `cmp` **逐字节一致**；`sha256sum -c SHA256SUMS` → **OK** |
 | 解包树 vs `git archive` 树 | 附件解包 **160** 份 / tag 树 **160** 份；**共有且逐字节相等 160**、内容不同 **0**、仅附件侧 **0**、仅 tag 树侧 **0** |
-| tag 后提交集合 | `git log v0.1.0..HEAD` **为空**（tag 处即交付面；后续留档提交只动 `plan/`） |
+| tag 后提交集合 | `git diff --name-only v0.1.0..HEAD` = `plan/00`、`plan/05`、`plan/06`、`plan/RELEASE-M6.md`、`.gitignore` —— **全部非交付面**（`src/` 与 `pyproject.toml` 零改动） |
 | tag 树内含留档 | `git cat-file -e v0.1.0:plan/RELEASE-M6.md` → 通过 |
 
 ### 2.2 CI 实跑结论（逐条配对；失败轮次照录，不抹除）
