@@ -160,6 +160,8 @@ PYTHONPATH=/tmp/netguard <python> -m tzaudit report ... --fail-on overlap     # 
 | #1 | push | `main` | `f06d9e8` | **failure** | 首推即红：4 个 pytest 矩阵全红，`layout + desensitization gates` 绿 |
 | #2 | push | `main` | `d05fb8d` | **success** | 修 CI 红因后重推；5/5 job success |
 | #3 | push | `v0.1.0`（tag） | `d05fb8d` | **success** | tag run；5/5 job success |
+| #4 | push | `main` | `35b0d43` | **success** | tag 后留档提交（附件副本移出版本控制）；5/5 job success |
+| #5 | push | `main` | `f3c9758` | **success** | 末轮留档修正（G5 改写 + 提交集合实测）；5/5 job success |
 
 **#1 的红因（据实记录）**：`tests/test_audit.py::test_invalid_is_decided_before_gap` 在缺
 `data/_downloads/slim` 时退回到 `bc-scenario` 的旧树，却仍按 `America/New_York` 取 zone ——
