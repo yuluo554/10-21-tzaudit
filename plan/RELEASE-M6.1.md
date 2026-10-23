@@ -40,13 +40,14 @@
 
 | # | 验证 | 方法 | 结论 |
 |---|---|---|---|
-| 1 | 布局门 | `py -3.12 tools/check-sprint-layout.py` | 退 0（10 条判据全绿） |
-| 2 | 脱敏门 | `py -3.12 tools/check-desensitized.py` | 退 0（4 条规则；扫 224 份文本文件） |
+| 1 | 布局门 | `py -3.12 tools/check-sprint-layout.py` | **退 0**（10 条判据全绿） |
+| 2 | 脱敏门 | `py -3.12 tools/check-desensitized.py` | **退 0**（4 条规则；扫 224 份文本文件） |
 | 3 | **变异门** | `py -3.12 tools/mutate-layout-gate.py` | **退 0，`变异验证: 10/10 组按预期`**（D1 的正面判据） |
-| 4 | 全量测试（有数据） | `py -3.12 -m pytest -o addopts=""` | 见 §1.7 |
-| 5 | 全量测试（CI 等价） | `git archive HEAD` 解包树跑 `pytest` | 见 §1.7 |
-| 6 | 金标复算（有数据） | `py -3.12 bench/run.py --check --suite parse/windows/diff/audit` | 各退 0、`不一致: 0` |
+| 4 | 全量测试（有数据） | `py -3.12 -m pytest -o addopts=""` | **434 passed, 1 skipped**（1807.24 s ≈ 30 分 07 秒） |
+| 5 | 全量测试（CI 等价） | `git archive HEAD` 解包树跑 `pytest -o addopts=""` | **363 passed, 72 skipped**（16.92 s） |
+| 6 | 金标复算（有数据） | `py -3.12 bench/run.py --check --suite parse/windows/diff/audit` | **各退 0、`不一致: 0`** |
 | 7 | 缺件纪律（无数据） | 干净树 `bench/run.py --check` | **退 3**，点名缺件 + "不是 0 项通过" |
+| 8 | CI 实跑 | 本版 push 后 CI 5/5 job success、Node20 注解 0（**run 编号属自指值，只记 §2.2**） | 见 §2.2 |
 
 ### 1.4 变异门 V9 修正的证据链（D1，本版重点）
 
@@ -83,8 +84,8 @@
 
 | 通道 | 命令 | 实测（2026-10-23，本机） |
 |---|---|---|
-| 3.12 有数据 | `py -3.12 -m pytest -o addopts=""` | **434 passed, 1 skipped** |
-| CI 等价（无 `data/_downloads`） | `git archive HEAD` 解包树 `pytest -o addopts=""` | **363 passed, 72 skipped** |
+| 3.12 有数据 | `py -3.12 -m pytest -o addopts=""` | **434 passed, 1 skipped**（1807.24 s） |
+| CI 等价（无 `data/_downloads`） | `git archive HEAD` 解包树 `pytest -o addopts=""` | **363 passed, 72 skipped**（16.92 s） |
 
 > 总数 **435 collected** = 363（CI 可跑）+ 72（金标，CI skip）。
 > CI 上无 `data/_downloads`（不入仓、需联网拉约 4 MB）⇒ 72 条金标测试全部 `SKIP`。
