@@ -78,3 +78,6 @@ desktop.ini
 # ---- 环境变量 ----
 .env
 .env.*
+
+# ---- 发布附件本地副本（不入仓）----
+dist-release/
